@@ -3,9 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
 import { Menu, X, User, LogOut, Settings } from 'lucide-react';
 import AIAssistantWidget from './AIAssistantWidget';
+import { TUTORIALS_DATA, SERVICES_DATA, NIKON_CONTACT } from '../utils/appData';
 
 // ⚠️ IMPORTANTE: Añade tu email aquí para ver el botón de Admin
-const ADMIN_EMAILS = ['apacheco@nikoncenter.cl', 'admin@nikon.cl']; 
+const ADMIN_EMAILS = ['apacheco@nikoncenter.cl', 'admin@nikon.cl'];
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,8 +16,59 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [aiContext, setAiContext] = useState<string>("");
   const location = useLocation();
   const navigate = useNavigate();
+
+  const fetchAIChatContext = async (userId: string | null) => {
+    try {
+      let context = `Información del Sitio:\n`;
+      
+      if (Array.isArray(TUTORIALS_DATA)) {
+        context += `- Tutoriales: ${TUTORIALS_DATA.map(t => t.title).join(', ')}\n`;
+      }
+      
+      if (Array.isArray(SERVICES_DATA)) {
+        context += `- Servicios: ${SERVICES_DATA.map(s => `${s.name} (${s.price})`).join(', ')}\n`;
+      }
+      
+      if (NIKON_CONTACT) {
+        context += `- Contacto: ${NIKON_CONTACT.web}, Instagram: ${NIKON_CONTACT.instagram}\n\n`;
+      }
+
+      // 1. Fetch Workshops from DB
+      try {
+        const { data: workshops } = await supabase.from('workshops').select('title, date, location').limit(5);
+        if (workshops && workshops.length > 0) {
+          context += `PRÓXIMOS WORKSHOPS:\n${workshops.map(w => `- ${w.title} (${w.date} en ${w.location})`).join('\n')}\n\n`;
+        }
+      } catch (e) { console.error("Error fetching workshops for context", e); }
+
+      // 2. Fetch Available Products (Catalog)
+      try {
+        const { data: catalog } = await supabase.from('products').select('name').limit(20);
+        if (catalog && catalog.length > 0) {
+          context += `CATÁLOGO DISPONIBLE (Recomienda estos): ${catalog.map(p => p.name).join(', ')}\n\n`;
+        }
+      } catch (e) { console.error("Error fetching catalog for context", e); }
+
+      // 3. User Gear
+      if (userId) {
+        try {
+          const { data: userGear } = await supabase.from('user_products').select('products(name)').eq('user_id', userId);
+          if (userGear && userGear.length > 0) {
+            const gearNames = userGear.map((item: any) => item.products?.name).filter(Boolean);
+            context += `EQUIPO DEL USUARIO: ${gearNames.join(', ')}\n`;
+          }
+        } catch (e) { console.error("Error fetching user gear for context", e); }
+      }
+
+      setAiContext(context);
+    } catch (err) {
+      console.error("Critical error building AI context:", err);
+      setAiContext("Error loading context.");
+    }
+  };
 
   useEffect(() => {
     // Check active session
@@ -24,6 +76,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchUserProfile(session.user.id);
+        fetchAIChatContext(session.user.id);
+      } else {
+        fetchAIChatContext(null);
       }
     });
 
@@ -31,8 +86,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchUserProfile(session.user.id);
+        fetchAIChatContext(session.user.id);
       } else {
         setUserProfile(null);
+        fetchAIChatContext(null);
       }
     });
 
@@ -84,7 +141,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Link to="/gear" className={`${isActive('/gear') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Equipo</Link>
               <Link to="/tutorials" className={`${isActive('/tutorials') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Tutoriales</Link>
               <Link to="/services" className={`${isActive('/services') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Soporte</Link>
-              
+
               {/* Admin Link - Restricted */}
               {isAdmin && (
                 <Link to="/admin" className={`${isActive('/admin') ? 'text-nikon-yellow' : 'text-red-400 hover:text-red-300'} font-semibold flex items-center gap-1 transition-colors`}>
@@ -139,11 +196,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Link to="/gear" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Equipo</Link>
               <Link to="/tutorials" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Tutoriales</Link>
               <Link to="/services" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Soporte</Link>
-              
+
               {isAdmin && (
                 <Link to="/admin" className="block px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Panel Admin</Link>
               )}
-              
+
               <div className="border-t border-gray-700 my-2 pt-2">
                 {user ? (
                   <>
@@ -213,7 +270,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </footer>
 
       {/* AI Assistant Widget */}
-      <AIAssistantWidget />
+      <AIAssistantWidget context={aiContext} />
     </div>
   );
 };

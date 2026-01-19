@@ -1,0 +1,8 @@
+{
+  "name": "Mi Nikon Experience",
+  "description": "Una plataforma de experiencia digital premium para usuarios de Nikon con registro de equipo, servicios técnicos, recomendaciones curadas y un asistente de IA experto.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

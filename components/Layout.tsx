@@ -23,15 +23,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const fetchAIChatContext = async (userId: string | null) => {
     try {
       let context = `Información del Sitio:\n`;
-      
+
       if (Array.isArray(TUTORIALS_DATA)) {
         context += `- Tutoriales: ${TUTORIALS_DATA.map(t => t.title).join(', ')}\n`;
       }
-      
+
       if (Array.isArray(SERVICES_DATA)) {
         context += `- Servicios: ${SERVICES_DATA.map(s => `${s.name} (${s.price})`).join(', ')}\n`;
       }
-      
+
       if (NIKON_CONTACT) {
         context += `- Contacto: ${NIKON_CONTACT.web}, Instagram: ${NIKON_CONTACT.instagram}\n\n`;
       }
@@ -48,7 +48,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       try {
         const { data: catalog } = await supabase.from('products').select('name').limit(20);
         if (catalog && catalog.length > 0) {
-          context += `CATÁLOGO DISPONIBLE (Recomienda estos): ${catalog.map(p => p.name).join(', ')}\n\n`;
+          const catalogNames = catalog.map(p => p.name).join(', ');
+          context += `Catálogo DISPONIBLE: ${catalogNames}\n\n`;
         }
       } catch (e) { console.error("Error fetching catalog for context", e); }
 
@@ -58,7 +59,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           const { data: userGear } = await supabase.from('user_products').select('products(name)').eq('user_id', userId);
           if (userGear && userGear.length > 0) {
             const gearNames = userGear.map((item: any) => item.products?.name).filter(Boolean);
-            context += `EQUIPO DEL USUARIO: ${gearNames.join(', ')}\n`;
+            context += `Equipo que YA TIENE: ${gearNames.join(', ')}\n`;
           }
         } catch (e) { console.error("Error fetching user gear for context", e); }
       }

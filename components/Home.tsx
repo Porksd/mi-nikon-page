@@ -108,7 +108,41 @@ const Home: React.FC = () => {
 
             <div className="flex flex-col gap-3 w-full">
               <div className="flex flex-col sm:flex-row gap-4">
-                {!user && (
+                {user ? (
+                   <div className="w-full space-y-3">
+                     <p className="text-gray-400 text-sm font-medium uppercase tracking-wider mb-2">¿Qué te gustaría hacer hoy?</p>
+                     
+                     <button onClick={() => navigate('/tutorials')} className="w-full flex items-center p-4 bg-nikon-surface border border-nikon-border hover:border-nikon-yellow rounded-lg group transition-all text-left">
+                       <div className="p-3 bg-nikon-black rounded-full mr-4 group-hover:bg-nikon-yellow/20 transition-colors">
+                         <Camera className="text-nikon-yellow" size={24} />
+                       </div>
+                       <div>
+                         <div className="text-white font-bold text-lg">Tomar una buena fotografía</div>
+                         <div className="text-gray-400 text-xs">Explora tutoriales y consejos</div>
+                       </div>
+                     </button>
+
+                     <button onClick={() => navigate('/gear')} className="w-full flex items-center p-4 bg-nikon-surface border border-nikon-border hover:border-nikon-yellow rounded-lg group transition-all text-left">
+                       <div className="p-3 bg-nikon-black rounded-full mr-4 group-hover:bg-nikon-yellow/20 transition-colors">
+                          <TrendingUp className="text-nikon-yellow" size={24} />
+                       </div>
+                       <div>
+                         <div className="text-white font-bold text-lg">Mejorar mi equipo</div>
+                         <div className="text-gray-400 text-xs">Recomendaciones personalizadas</div>
+                       </div>
+                     </button>
+
+                     <button onClick={() => navigate('/workshops')} className="w-full flex items-center p-4 bg-nikon-surface border border-nikon-border hover:border-nikon-yellow rounded-lg group transition-all text-left">
+                       <div className="p-3 bg-nikon-black rounded-full mr-4 group-hover:bg-nikon-yellow/20 transition-colors">
+                         <GraduationCap className="text-nikon-yellow" size={24} />
+                       </div>
+                       <div>
+                         <div className="text-white font-bold text-lg">Aprender algo nuevo</div>
+                         <div className="text-gray-400 text-xs">Workshops y eventos</div>
+                       </div>
+                     </button>
+                   </div>
+                ) : (
                    <>
                      <button 
                        onClick={() => navigate('/register')}
@@ -182,57 +216,6 @@ const Home: React.FC = () => {
             </div>
           </div>
         </section>
-
-        {/* User Actions Section - Full Width */}
-        {user && (
-          <section className="flex flex-col gap-6 w-full">
-            <div>
-              <h3 className="text-2xl font-bold font-display text-white">¿Qué te gustaría hacer hoy?</h3>
-              <p className="text-nikon-text">Selecciona una actividad para comenzar</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-               <button onClick={() => navigate('/tutorials')} className="flex flex-col p-8 bg-nikon-surface border border-nikon-border hover:border-nikon-yellow rounded-xl group transition-all text-left relative overflow-hidden h-full">
-                 <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                   <Camera size={120} className="text-nikon-yellow" />
-                 </div>
-                 <div className="w-16 h-16 bg-nikon-black rounded-full flex items-center justify-center mb-6 group-hover:bg-nikon-yellow/20 transition-colors z-10">
-                   <Camera className="text-nikon-yellow" size={32} />
-                 </div>
-                 <div className="z-10 mt-auto">
-                   <h4 className="text-xl font-bold text-white mb-2">Tomar una buena fotografía</h4>
-                   <p className="text-gray-400 text-sm">Explora nuestra biblioteca de tutoriales y consejos de expertos.</p>
-                 </div>
-               </button>
-
-               <button onClick={() => navigate('/gear')} className="flex flex-col p-8 bg-nikon-surface border border-nikon-border hover:border-nikon-yellow rounded-xl group transition-all text-left relative overflow-hidden h-full">
-                 <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <TrendingUp size={120} className="text-nikon-yellow" />
-                 </div>
-                 <div className="w-16 h-16 bg-nikon-black rounded-full flex items-center justify-center mb-6 group-hover:bg-nikon-yellow/20 transition-colors z-10">
-                    <TrendingUp className="text-nikon-yellow" size={32} />
-                 </div>
-                 <div className="z-10 mt-auto">
-                   <h4 className="text-xl font-bold text-white mb-2">Mejorar mi equipo</h4>
-                   <p className="text-gray-400 text-sm">Recibe recomendaciones personalizadas basadas en tu estilo.</p>
-                 </div>
-               </button>
-
-               <button onClick={() => navigate('/workshops')} className="flex flex-col p-8 bg-nikon-surface border border-nikon-border hover:border-nikon-yellow rounded-xl group transition-all text-left relative overflow-hidden h-full">
-                 <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                   <GraduationCap size={120} className="text-nikon-yellow" />
-                 </div>
-                 <div className="w-16 h-16 bg-nikon-black rounded-full flex items-center justify-center mb-6 group-hover:bg-nikon-yellow/20 transition-colors z-10">
-                   <GraduationCap className="text-nikon-yellow" size={32} />
-                 </div>
-                 <div className="z-10 mt-auto">
-                   <h4 className="text-xl font-bold text-white mb-2">Aprender algo nuevo</h4>
-                   <p className="text-gray-400 text-sm">Inscríbete en workshops exclusivos y eventos de la comunidad.</p>
-                 </div>
-               </button>
-            </div>
-          </section>
-        )}
 
         {/* Quick Access */}
         <section className="flex flex-col gap-8 py-6">

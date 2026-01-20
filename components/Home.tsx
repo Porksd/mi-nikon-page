@@ -11,34 +11,28 @@ const Home: React.FC = () => {
 
   const products = [
     {
-      name: "Z8 Body",
-      tagline: "La cámara híbrida definitiva",
-      link: "https://www.nikoncenter.cl/productos/zseries_cam.php?sec=zseries&cam=16&kit=56&name=Z8",
-      image: "/images/z8_body_destacada.jpg"
+      name: "Nuevo Firmware 2.0",
+      tagline: "Rendimiento impresionante, Ahora mejorado.",
+      link: "https://downloadcenter.nikonimglib.com/es/download/fw/571.html",
+      image: "/images/shortcuts/shortcut_nuevo_firmware_2.jpg"
     },
     {
-      name: "Z6 III Body",
-      tagline: "Rendimiento y Versatilidad increíbles",
-      link: "https://www.nikoncenter.cl/productos/zseries_cam.php?sec=zseries&cam=18&kit=70&name=Z6+III+",
-      image: "/images/z6_III_destacada.jpg"
+      name: "NIKKOR DX 16-50mm f/2.8 VR",
+      tagline: "Rendimiento de zoom rápido y versátil.",
+      link: "https://www.nikoncenter.cl/lentes/mirrorless/nikkor-z-dx-16-50mm-f28-vr",
+      image: "/images/shortcuts/shortcut_dx_16_50.jpg"
     },
     {
-      name: "ZR Body",
-      tagline: "Calidad cinematográfica",
-      link: "https://www.nikoncenter.cl/productos/zseries_cam.php?sec=zseries&cam=21&kit=88&name=ZR",
-      image: "/images/zr_body_destacada.jpg"
+      name: "Z9: Nuevo Firmware 5.0",
+      tagline: "Nuevas y poderosas ventajas y mejoras",
+      link: "https://downloadcenter.nikonimglib.com/es/products/589/Z_9.html",
+      image: "/images/shortcuts/shortcut_nuevo_firmware_Z9.jpg"
     },
     {
-      name: "Lente Z 180-600mm",
-      tagline: "Alcance y Versatilidad",
-      link: "https://www.nikoncenter.cl/productos/objetivos_detail.php?sec=objetivos&obj=1111&kit=165&name=NIKKOR+Z+180-600mm+F+5.6-6.3+VR+",
-      image: "/images/lente_180-600_destacada.jpg"
-    },
-    {
-      name: "Lente Z 70-180mm",
-      tagline: "Más luz. Más alcance.",
-      link: "https://www.nikoncenter.cl/productos/objetivos_detail.php?sec=objetivos&obj=1110&kit=164&name=NIKKOR+Z+70-180mm+F+2.8",
-      image: "/images/lente_70-180_destacada.jpg"
+      name: "NIKKOR DX MC 35mm f/1.7",
+      tagline: "Ligero, brillante y hermoso.",
+      link: "https://www.nikoncenter.cl/lentes/mirrorless/nikkor-z-dx-mc-35mm-f-17",
+      image: "/images/shortcuts/shortcut_dx_mc_35.jpg"
     }
   ];
 

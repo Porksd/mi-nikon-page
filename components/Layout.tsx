@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
-import { Menu, X, User, LogOut, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Instagram, Facebook, Youtube } from 'lucide-react';
 import AIAssistantWidget from './AIAssistantWidget';
 import { TUTORIALS_DATA, SERVICES_DATA, NIKON_CONTACT } from '../utils/appData';
 
@@ -234,38 +234,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Footer */}
       <footer className="bg-nikon-black text-white py-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="text-center md:text-left">
               <h3 className="text-xl font-bold mb-4 text-nikon-yellow">MY NIKON</h3>
-              <p className="text-gray-400">Desbloquea tu potencial creativo con talleres exclusivos, tutoriales y eventos de la comunidad.</p>
+              <p className="text-gray-400 max-w-md">Desbloquea tu potencial creativo con talleres exclusivos, tutoriales y eventos de la comunidad.</p>
             </div>
-            <div>
-              <h4 className="font-bold mb-4">Explorar</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/workshops" className="hover:text-nikon-yellow transition-colors">Talleres</Link></li>
-                <li><Link to="/benefits" className="hover:text-nikon-yellow transition-colors">Beneficios</Link></li>
-                <li><Link to="/gear" className="hover:text-nikon-yellow transition-colors">Recomendaciones</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-4">Comunidad</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/tutorials" className="hover:text-nikon-yellow transition-colors">Tutoriales</Link></li>
-                <li><a href="#" className="hover:text-nikon-yellow transition-colors">Foro</a></li>
-                <li><a href="#" className="hover:text-nikon-yellow transition-colors">Eventos</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-4">Soporte</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/services" className="hover:text-nikon-yellow transition-colors">Servicio Técnico</Link></li>
-                <li><a href="#" className="hover:text-nikon-yellow transition-colors">Contacto</a></li>
-                <li><a href="#" className="hover:text-nikon-yellow transition-colors">FAQ</a></li>
-              </ul>
+            
+            <div className="flex space-x-6">
+              <a href="https://www.instagram.com/nikonchile/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-nikon-yellow transition-colors">
+                <Instagram size={24} />
+              </a>
+              <a href="https://www.facebook.com/NikonChileOficial/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-nikon-yellow transition-colors">
+                <Facebook size={24} />
+              </a>
+              <a href="https://www.youtube.com/user/NikonChileOficial" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-nikon-yellow transition-colors">
+                <Youtube size={24} />
+              </a>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500 text-sm">
-            <p>&copy; {new Date().getFullYear()} Nikon Corp. Todos los derechos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} Udenio.cl. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>

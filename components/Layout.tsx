@@ -131,17 +131,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <Link to="/" className="text-2xl font-bold tracking-tighter text-nikon-yellow">
-              MY NIKON
+              MI NIKON
             </Link>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex space-x-8 items-center">
               <Link to="/" className={`${isActive('/') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Inicio</Link>
-              <Link to="/workshops" className={`${isActive('/workshops') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Talleres</Link>
-              <Link to="/benefits" className={`${isActive('/benefits') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Beneficios</Link>
-              <Link to="/gear" className={`${isActive('/gear') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Equipo</Link>
-              <Link to="/tutorials" className={`${isActive('/tutorials') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Tutoriales</Link>
-              <Link to="/services" className={`${isActive('/services') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Soporte</Link>
+              <Link to="/gear" className={`${isActive('/gear') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Mi Equipo</Link>
+              <Link to="/benefits" className={`${isActive('/benefits') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Mi Espacio</Link>
+              <Link to="/workshops" className={`${isActive('/workshops') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Actividades</Link>
+              <Link to="/services" className={`${isActive('/services') ? 'text-nikon-yellow' : 'text-gray-300 hover:text-white'} transition-colors`}>Servicios</Link>
 
               {/* Admin Link - Restricted */}
               {isAdmin && (
@@ -192,11 +191,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="md:hidden bg-nikon-black border-t border-gray-800">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
-              <Link to="/workshops" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Talleres</Link>
-              <Link to="/benefits" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Beneficios</Link>
-              <Link to="/gear" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Equipo</Link>
-              <Link to="/tutorials" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Tutoriales</Link>
-              <Link to="/services" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Soporte</Link>
+              <Link to="/gear" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Mi Equipo</Link>
+              <Link to="/benefits" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Mi Espacio</Link>
+              <Link to="/workshops" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Actividades</Link>
+              <Link to="/services" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Servicios</Link>
 
               {isAdmin && (
                 <Link to="/admin" className="block px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Panel Admin</Link>
@@ -236,7 +234,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-center md:text-left">
-              <h3 className="text-xl font-bold mb-4 text-nikon-yellow">MY NIKON</h3>
+              <h3 className="text-xl font-bold mb-4 text-nikon-yellow">MI NIKON</h3>
               <p className="text-gray-400 max-w-md">Desbloquea tu potencial creativo con talleres exclusivos, tutoriales y eventos de la comunidad.</p>
             </div>
             

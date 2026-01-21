@@ -23,15 +23,36 @@ const Gear: React.FC = () => {
   const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
   const [myGear, setMyGear] = useState<UserProduct[]>([]);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]); // For filtering
+  const [galleryFilter, setGalleryFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [sessionUser, setSessionUser] = useState<any>(null);
 
-  // Helper to determine if product is "main/registrable" (Reflex, Mirrorless, Lenses)
+  // Helper to determine if product is "main/registrable" (Reflex, Mirrorless, Lenses, Flashes)
   const isRegistrable = (product: Product) => {
       const search = (product.category + ' ' + product.name).toLowerCase();
-      const terms = ['reflex', 'mirrorless', 'z series', 'dslr', 'lente', 'objetivo', 'nikkor'];
-      // Exclude Coolpix even if it matches something else (though unlikely)
+      // Expanded terms to include Flash, Speedlight, SB- and specific Z handling
+      const terms = [
+          'reflex', 'dslr', 
+          'lente', 'objetivo', 'nikkor', 
+          'flash', 'speedlight', 'sb-', 
+          'z series', 'mirrorless',
+          // Specific Z camera terms to ensure matches
+          'z 9', 'z 8', 'z 7', 'z 6', 'z 5', 'z f', 'z 50', 'z 30', 'z fc',
+          'z9', 'z8', 'z7', 'z6', 'z5', 'zf', 'z50', 'z30', 'zfc'
+      ];
+      
+      // Explicitly check for "Z" followed by space or number to catch "Z 50", "Z6", "Nikon Z f"
+      // avoiding "Zoom" or "Horizon" false positives if any.
+      const isZSeries = /\bz\s?[0-9a-z]+\b/.test(search) && !search.includes('zoom');
+
+      if (isZSeries) return true;
+
+      // Exclude Coolpix only if it's explicitly categorized as compact and not in our "Main" list logic override?
+      // Actually Coolpix P1000/P950 might be considered main by some, but usually Compacts are secondary unless high end.
+      // User didn't specify Coolpix P series rules, so we stick to the list logic.
       if (search.includes('coolpix')) return false;
+
       return terms.some(t => search.includes(t));
   };
 
@@ -105,12 +126,72 @@ const Gear: React.FC = () => {
   };
 
   const fetchAvailableProducts = async () => {
+      // Fetch a broader set and filter client-side to ensure we match by name (e.g. "Z8") not just category. 
+      // This fixes the issue where Z Series or Flashes were missing if their category wasn't explicit.
       const { data } = await supabase
         .from('products')
         .select('*')
-        .limit(20); // Limit for demo
-      if (data) setAvailableProducts(data);
+        .limit(1000); 
+        
+      if (data) {
+          const filtered = data.filter(p => isRegistrable(p));
+          setAvailableProducts(filtered);
+          setDisplayedProducts(filtered);
+      }
   };
+
+  const handleGalleryFilter = (category: string) => {
+      setGalleryFilter(category);
+      if (category === 'All') {
+          setDisplayedProducts(availableProducts);
+          return;
+      }
+      const filtered = availableProducts.filter(p => {
+          const cat = (p.category || '').toLowerCase();
+          const name = (p.name || '').toLowerCase();
+          
+          if (category === 'Zseries') {
+              // Strict Z Camera logic: 
+              // 1. Must have "Z" in name (Nikon Z 9, Z 50, Zf, etc.)
+              // 2. Must NOT be a lens (Nikkor) or adapter (FTZ, Mount)
+              const isZCamera = (name.includes('nikon z') || /\bz\s?[0-9a-z]+\b/.test(name)) && 
+                            !name.includes('nikkor') && 
+                            !name.includes('ftz') && 
+                            !name.includes('mount') &&
+                            !name.includes('lente') &&
+                            !name.includes('objetivo');
+          
+          const isZCategory = cat.includes('mirrorless') || cat.includes('z series') || cat.includes('cámara z');
+          
+          // STRICT EXCLUSION: If it contains 'nikkor', 'lente', 'mount' it is NOT a camera body for this view
+          if (name.includes('nikkor') || name.includes('lente') || name.includes('mount')) return false;
+
+          return isZCamera || (isZCategory && !name.includes('nikkor'));
+      }
+
+      if (category === 'Réflex') {
+          // Match D followed by digit (D850, D6, D3500)
+          const isReflexName = /\bd\s?[0-9]{1,4}\b/.test(name) || name.includes('d6') || name.includes('d850');
+          const isReflexCategory = cat.includes('reflex') || cat.includes('dslr');
+          return isReflexName || isReflexCategory;
+      }
+
+      if (category === 'Lentes') {
+          // Must be a lens. Exclude Kits which contain "Lente" in name but are actually cameras.
+          if (name.includes('kit') || name.includes('body') || name.includes('cuerpo') || name.includes(' + ')) return false;
+          
+          return name.includes('nikkor') || cat.includes('lente') || cat.includes('objetivo');
+      }
+
+      if (category === 'Flash') {
+          // Broaden search for flashes
+          return name.includes('sb-') || name.includes('speedlight') || name.includes('r1c1') || cat.includes('flash') || cat.includes('iluminación');
+      }
+      
+      return false;
+  });
+  setDisplayedProducts(filtered);
+};
 
   const addToGear = async (product: Product) => {
     if (!sessionUser) return;
@@ -282,22 +363,49 @@ const Gear: React.FC = () => {
 
       {/* Gallery View (Add Gear) - Now fetched from DB */}
       {!loading && viewMode === 'gallery' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {availableProducts.map((prod) => (
-            <div key={prod.id} className="bg-nikon-surface border border-nikon-border rounded-xl p-4 flex flex-col items-center text-center hover:border-nikon-yellow transition-all group">
-               <div className="w-full aspect-square bg-black rounded-lg mb-4 overflow-hidden relative">
-                  <img src={prod.image_url || 'https://via.placeholder.com/300?text=No+Image'} alt={prod.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
-               </div>
-               <h3 className="text-sm font-bold text-white mb-1 line-clamp-2 h-10">{prod.name}</h3>
-               <p className="text-xs text-nikon-text mb-4">{prod.category}</p>
-               <button 
-                 onClick={() => addToGear(prod)}
-                 className="w-full py-2 bg-white text-black font-bold rounded hover:bg-nikon-yellow transition-colors"
-               >
-                 Seleccionar
-               </button>
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-wrap gap-2">
+                {['All', 'Zseries', 'Réflex', 'Lentes', 'Flash'].map(cat => (
+                    <button 
+                        key={cat} 
+                        onClick={() => handleGalleryFilter(cat)}
+                        className={`px-4 py-2 rounded-full text-sm font-bold border transition-colors ${
+                            galleryFilter === cat 
+                            ? 'bg-nikon-yellow text-black border-nikon-yellow' 
+                            : 'bg-transparent text-gray-400 border-gray-700 hover:text-white hover:border-white'
+                        }`}
+                    >
+                        {cat === 'All' ? 'Todos' : cat}
+                    </button>
+                ))}
             </div>
-          ))}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {displayedProducts.map((prod) => (
+                <div key={prod.id} className="bg-nikon-surface border border-nikon-border rounded-xl p-4 flex flex-col items-center text-center hover:border-nikon-yellow transition-all group">
+                <div className="w-full aspect-square bg-black rounded-lg mb-4 overflow-hidden relative flex items-center justify-center">
+                    <img 
+                        src={prod.image_url || 'https://via.placeholder.com/300?text=Nikon+Product'} 
+                        alt={prod.name} 
+                        onError={(e) => {
+                            // Fallback to a clean icon or generic image if the specific product image fails (404)
+                            e.currentTarget.src = '/icon-line-cameras.svg'; 
+                            e.currentTarget.className = "w-1/2 h-1/2 opacity-50 invert"; // Style the fallback icon
+                        }}
+                        className="w-full h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity" 
+                    />
+                </div>
+                <h3 className="text-sm font-bold text-white mb-1 line-clamp-2 h-10">{prod.name}</h3>
+                <p className="text-xs text-nikon-text mb-4">{prod.category}</p>
+                <button 
+                    onClick={() => addToGear(prod)}
+                    className="w-full py-2 bg-white text-black font-bold rounded hover:bg-nikon-yellow transition-colors"
+                >
+                    Seleccionar
+                </button>
+                </div>
+            ))}
+            </div>
         </div>
       )}
 

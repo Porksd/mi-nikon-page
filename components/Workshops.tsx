@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
+import { Bell, Calendar, MapPin, ChevronDown, CheckCircle, Info } from 'lucide-react';
 
 interface DBWorkshop {
   id: string;
@@ -14,8 +15,17 @@ interface DBWorkshop {
   inscriptions: { count: number }[];
 }
 
+interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    category: string;
+    created_at: string;
+}
+
 const Workshops: React.FC = () => {
    const [workshops, setWorkshops] = useState<DBWorkshop[]>([]);
+   const [notifications, setNotifications] = useState<Notification[]>([]);
    const [expandedId, setExpandedId] = useState<string | null>(null);
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [selectedWorkshop, setSelectedWorkshop] = useState<DBWorkshop | null>(null);
@@ -23,8 +33,14 @@ const Workshops: React.FC = () => {
 
    useEffect(() => {
       fetchWorkshops();
+      fetchNotifications();
       supabase.auth.getUser().then(({ data: { user } }) => setCurrentUser(user));
    }, []);
+
+   const fetchNotifications = async () => {
+        const { data } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(3);
+        if (data) setNotifications(data);
+   };
 
    const fetchWorkshops = async () => {
       const { data, error } = await supabase
@@ -94,6 +110,26 @@ const Workshops: React.FC = () => {
                Participa en nuestras experiencias presenciales exclusivas. Cupos limitados para garantizar un aprendizaje personalizado.
             </p>
          </div>
+
+         {/* Creative Notifications Display */}
+         {notifications.length > 0 && (
+            <div className="mb-12">
+                <div className="flex items-center gap-2 mb-4">
+                    <Bell className="text-nikon-yellow w-5 h-5" />
+                    <h3 className="text-white font-bold text-lg">Novedades y Lanzamientos</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {notifications.map((notif, idx) => (
+                        <div key={notif.id} className="relative group bg-nikon-surface/50 border border-nikon-border rounded-xl p-6 hover:bg-nikon-surface transition-colors cursor-default">
+                             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-nikon-yellow/5 to-transparent rounded-tr-xl rounded-bl-[100px]"></div>
+                             <span className="text-[10px] font-bold text-nikon-yellow uppercase tracking-widest mb-2 block">{notif.category}</span>
+                             <h4 className="text-white font-bold mb-2 leading-tight">{notif.title}</h4>
+                             <p className="text-sm text-gray-400 line-clamp-3">{notif.message}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+         )}
 
          {workshops.length === 0 && <p className="text-center text-gray-400">No hay workshops programados por el momento.</p>}
 

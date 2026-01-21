@@ -85,7 +85,7 @@ const Home: React.FC = () => {
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-display leading-tight tracking-tight">
                 {user ? (
                     <>
-                        Hola <span className="text-nikon-yellow">{profile?.first_name || 'Nikonista'}</span>, has iniciado sesión.
+                        Hola <span className="text-nikon-yellow">{profile?.first_name || 'Nikonista'}</span>, bienvenido.
                     </>
                 ) : (
                     <>

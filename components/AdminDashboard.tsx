@@ -50,7 +50,7 @@ interface Notification {
 }
 
 const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'activity' | 'workshops' | 'notifications' | 'carts' | 'banners' | 'feedback'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'activity' | 'workshops' | 'notifications' | 'carts' | 'banners' | 'feedback' | 'users'>('analytics');
   const [loading, setLoading] = useState(false);
   
   // Data States
@@ -59,6 +59,7 @@ const AdminDashboard: React.FC = () => {
   const [recentRegistrations, setRecentRegistrations] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
   const [productRegistrations, setProductRegistrations] = useState<any[]>([]);
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string | null>(null);
   const [isProcessingWaitlist, setIsProcessingWaitlist] = useState(false);
@@ -177,6 +178,12 @@ const AdminDashboard: React.FC = () => {
                 .select('*, profile:profiles(first_name, last_name, email)')
                 .order('created_at', { ascending: false });
             if (data) setFeedbacks(data);
+        } else if (activeTab === 'users') {
+            const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (data) setUsersList(data);
         }
     } catch (error) {
         console.error("Error fetching data", error);
@@ -418,7 +425,7 @@ const AdminDashboard: React.FC = () => {
         <h1 className="text-3xl font-black font-display">Panel de Administración</h1>
         <div className="flex gap-2 flex-wrap">
             {/* Carts tab OCULTO PARA FASE 1.0 */}
-            {['analytics', 'activity', 'workshops', 'banners', 'notifications', 'feedback'].map((tab) => (
+            {['analytics', 'activity', 'workshops', 'banners', 'notifications', 'feedback', 'users'].map((tab) => (
                 <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
@@ -430,7 +437,8 @@ const AdminDashboard: React.FC = () => {
                      tab === 'activity' ? 'Actividad' : 
                      tab === 'workshops' ? 'Workshops' :
                      tab === 'banners' ? 'Banners' :
-                     tab === 'feedback' ? 'Feedbacks' : 'Notificaciones'}
+                     tab === 'feedback' ? 'Feedbacks' : 
+                     tab === 'users' ? 'Usuarios' : 'Notificaciones'}
                 </button>
             ))}
         </div>
@@ -1084,6 +1092,41 @@ const AdminDashboard: React.FC = () => {
                           No hay feedbacks registrados aún.
                       </div>
                   )}
+              </div>
+          </div>
+      )}
+      
+      {/* USERS TAB */}
+      {!loading && activeTab === 'users' && (
+          <div className="bg-nikon-surface p-6 rounded-xl border border-nikon-border overflow-x-auto">
+              <h2 className="text-xl font-bold mb-6">Lista de Usuarios Registrados</h2>
+              <div className="min-w-[800px]">
+                  <div className="grid grid-cols-12 gap-4 p-4 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-white/10">
+                      <div className="col-span-3">Nombre</div>
+                      <div className="col-span-4">Email</div>
+                      <div className="col-span-2">Teléfono</div>
+                      <div className="col-span-3">Fecha de Registro</div>
+                  </div>
+                  <div className="divide-y divide-white/5">
+                      {usersList.length > 0 ? usersList.map((user, i) => (
+                          <div key={i} className="grid grid-cols-12 gap-4 p-4 hover:bg-white/5 transition-colors items-center text-sm">
+                              <div className="col-span-3 font-medium text-white">
+                                  {user.first_name} {user.last_name}
+                                  {!user.first_name && !user.last_name && <span className="text-gray-500 italic">Sin nombre</span>}
+                              </div>
+                              <div className="col-span-4 text-gray-300 truncate" title={user.email}>{user.email || '-'}</div>
+                              <div className="col-span-2 text-gray-400">{user.phone || '-'}</div>
+                              <div className="col-span-3 text-gray-500">{new Date(user.created_at).toLocaleString()}</div>
+                          </div>
+                      )) : (
+                          <div className="text-center py-10 text-gray-500 italic">
+                              No hay usuarios registrados.
+                          </div>
+                      )}
+                  </div>
+                  <div className="p-4 border-t border-white/10 text-right text-sm text-gray-400">
+                      Total: {usersList.length} usuarios
+                  </div>
               </div>
           </div>
       )}

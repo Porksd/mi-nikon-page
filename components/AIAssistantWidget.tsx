@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import FormattedResponse from './FormattedResponse';
+import { trackAIQuery } from '../utils/analyticsService';
+
+import { supabase } from '../utils/supabaseClient';
 
 interface AIAssistantWidgetProps {
   isOpen?: boolean;
@@ -33,11 +38,11 @@ const AIAssistantWidget: React.FC<AIAssistantWidgetProps> = ({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // New State for Advanced Features
-  const [modelMode, setModelMode] = useState<'fast' | 'think'>('fast');
   const [selectedImage, setSelectedImage] = useState<{data:string, mimeType:string} | null>(null);
   
+  // Enviar modo fijo "fast" ya que "think" (pro) da error 429 de límite de cuota
+  const modelMode = 'fast';
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +55,123 @@ const AIAssistantWidget: React.FC<AIAssistantWidgetProps> = ({
       scrollToBottom();
     }
   }, [messages, isVisible]);
+
+  useEffect(() => {
+    const handleDeepenTip = (event: any) => {
+      const { message } = event.detail;
+      // Forzar apertura del widget 
+      if (!isVisible) {
+          if (onToggle) onToggle();
+          else setInternalIsOpen(true);
+      }
+      
+      // Delay corto para asegurar que el chat se ha abierto y montado correctamente antes de enviar
+      setTimeout(() => {
+         sendAutomatedMessage(message);
+      }, 100);
+    };
+
+    window.addEventListener('deepen-tip', handleDeepenTip);
+    return () => window.removeEventListener('deepen-tip', handleDeepenTip);
+  }, [isVisible, onToggle, variant]); // removimos isLoading de dependencias para evitar multi-triggers
+
+  const checkAuthAndGearBeforeSend = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return { isAuth: false, systemInstructionExtra: '' };
+    }
+    
+    let systemInstructionExtra = '';
+    try {
+      const { data: userGear } = await supabase
+        .from('user_equipment')
+        .select('product_name')
+        .eq('user_id', session.user.id);
+        
+      const gearList = userGear ? userGear.map((item: any) => item.product_name).filter(Boolean) : [];
+      const hasGear = gearList.length > 0;
+      
+      if (hasGear) {
+        systemInstructionExtra = `DATO DE CONTEXTO: El usuario tiene este equipo registrado en su cuenta: ${gearList.join(', ')}. OBLIGATORIO: Cuando saludes o comiences tu mensaje introductorio, debes mencionar explícitamente y de forma amigable que notas que tiene este equipo. Cuando expliques cómo aplicar los conceptos, hazlo usando funciones o botones específicos de este equipo.`;
+      } else {
+        systemInstructionExtra = `DATO DE CONTEXTO: El usuario no tiene equipo seleccionado actualmente. OBLIGATORIO: En tu respuesta sugiere brevemente que registre su equipo dentro de su cuenta (Mi Equipo) para que puedas darle consejos más personalizados.`;
+      }
+    } catch (err) {
+      console.error("Error checking user gear:", err);
+    }
+    
+    return { isAuth: true, systemInstructionExtra };
+  };
+
+  const sendAutomatedMessage = async (text: string) => {
+    if (isLoading) return;
+    
+    // Si el chat estaba cerrado, abrirlo ya se gestionó en el listener
+    // pero asegurémonos de que el estado local de mensajes incluya el nuevo
+    
+    const newUserMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      text,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, newUserMsg]);
+    setIsLoading(true);
+
+    try {
+      const authStatus = await checkAuthAndGearBeforeSend();
+      
+      if (!authStatus.isAuth) {
+        const loginMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'model',
+          text: "¡Hola! Para que tu experiencia sea mucho mejor y poder ayudarte de forma precisa, **primero debes iniciar sesión para continuar** usando el chat.",
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, loginMsg]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Formatear historia para el servicio Gemini de forma ROBUSTA
+      const apiHistory = messages
+        .filter(m => m.id !== 'init') // Omitir el mensaje de bienvenida inicial
+        .map(m => ({
+          role: (m.role === 'model' ? 'model' : 'user') as 'user' | 'model',
+          parts: [{ text: m.text }]
+        }));
+
+      // Add context if provided
+      const promptWithContext = context 
+        ? `Contexto: ${context}\n\nPregunta del usuario: ${text}`
+        : text;
+
+      // Llamar al servicio
+      const response = await sendMessageToGemini(promptWithContext, apiHistory, undefined, modelMode, authStatus.systemInstructionExtra);
+      
+      const botMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'model',
+        text: response,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, botMsg]);
+      trackAIQuery(text, true);
+    } catch (error) {
+       console.error("AI Error:", error);
+       const errorMsg: ChatMessage = {
+         id: 'error-' + Date.now(),
+         role: 'model',
+         text: "Lo siento, tuve un problema al procesar tu solicitud. Por favor, reintenta en un momento.",
+         timestamp: new Date()
+       };
+       setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleToggle = () => {
     if (onToggle) onToggle();
@@ -104,6 +226,20 @@ const AIAssistantWidget: React.FC<AIAssistantWidgetProps> = ({
     setIsLoading(true);
 
     try {
+      const authStatus = await checkAuthAndGearBeforeSend();
+      
+      if (!authStatus.isAuth) {
+        const loginMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'model',
+          text: "¡Hola! Para que tu experiencia sea mucho mejor y poder ayudarte de forma precisa, **primero debes iniciar sesión para continuar** usando el chat.",
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, loginMsg]);
+        setIsLoading(false);
+        return;
+      }
+
       // Prepare history for API
       const history = messages.map(m => ({
         role: m.role,
@@ -115,7 +251,7 @@ const AIAssistantWidget: React.FC<AIAssistantWidgetProps> = ({
         ? `Contexto: ${context}\n\nPregunta del usuario: ${userText}`
         : userText;
 
-      const responseText = await sendMessageToGemini(promptWithContext, history, currentImge || undefined, modelMode);
+      const responseText = await sendMessageToGemini(promptWithContext, history, currentImge || undefined, modelMode, authStatus.systemInstructionExtra);
 
       const newAiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -124,6 +260,9 @@ const AIAssistantWidget: React.FC<AIAssistantWidgetProps> = ({
         timestamp: new Date()
       };
       setMessages(prev => [...prev, newAiMsg]);
+      
+      // Track AI query
+      trackAIQuery(userText, responseText.length);
     } catch (error) {
       console.error(error);
       const errorMsg: ChatMessage = {
@@ -140,22 +279,15 @@ const AIAssistantWidget: React.FC<AIAssistantWidgetProps> = ({
 
   const chatContentJsx = (
     <>
-       {/* Header with Mode Toggle */}
+       {/* Header */}
        <div className="p-3 border-b border-nikon-border bg-[#221e10] flex justify-between items-center">
           <div className="flex items-center gap-2">
-             <div className={`w-2 h-2 rounded-full animate-pulse ${modelMode === 'think' ? 'bg-purple-500' : 'bg-green-500'}`}></div>
+             <div className="w-2 h-2 rounded-full animate-pulse bg-green-500"></div>
              <h3 className="font-bold text-white text-xs tracking-wide">
-                 NIKON IA ({modelMode === 'fast' ? 'RÁPIDO' : 'PENSADOR'})
+                 NIKON IA
              </h3>
           </div>
           <div className="flex items-center gap-2">
-             <button 
-                onClick={() => setModelMode(prev => prev === 'fast' ? 'think' : 'fast')}
-                className="text-xs px-2 py-1 rounded bg-[#393528] text-gray-300 hover:text-white border border-gray-600 transition-colors"
-                title={modelMode === 'fast' ? "Activar Gemini Pro (Más inteligente)" : "Activar Gemini Flash (Más rápido)"}
-             >
-                {modelMode === 'fast' ? '🧠 Pensar' : '⚡ Rápido'}
-             </button>
              {onClose && (
                 <button onClick={onClose} className="text-gray-400 hover:text-white">
                     <span className="material-symbols-outlined">close</span>
@@ -175,7 +307,11 @@ const AIAssistantWidget: React.FC<AIAssistantWidgetProps> = ({
                 </div>
                 <div className="flex flex-col gap-1 items-start">
                     <div className={`p-3 rounded-2xl text-sm leading-relaxed ${msg.role === 'model' ? 'bg-[#2c281b] border border-nikon-border text-[#ececec] rounded-bl-sm' : 'bg-nikon-yellow text-nikon-dark font-medium rounded-br-sm'}`}>
-                         {msg.text}
+                         {msg.role === 'model' ? (
+                           <div className="whitespace-pre-wrap">{msg.text.replace(/\*\*/g, '')}</div>
+                         ) : (
+                           msg.text
+                         )}
                     </div>
                     {/* TTS Button for Model */}
                     {msg.role === 'model' && (

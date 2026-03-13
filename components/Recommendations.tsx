@@ -1,5 +1,7 @@
-import React, { useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useRef, useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../utils/supabaseClient';
+import { AlertCircle } from 'lucide-react';
 import AIAssistantWidget from './AIAssistantWidget';
 
 const FEATURED_OFFERS = [
@@ -48,7 +50,17 @@ const FEATURED_OFFERS = [
 ];
 
 const Recommendations: React.FC = () => {
+   const navigate = useNavigate();
+   const [sessionUser, setSessionUser] = useState<any>(null);
+   const [loading, setLoading] = useState(true);
    const carouselRef = useRef<HTMLDivElement>(null);
+
+   useEffect(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+         setSessionUser(session?.user);
+         setLoading(false);
+      });
+   }, []);
 
    const scrollLeft = () => {
       carouselRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
@@ -57,6 +69,26 @@ const Recommendations: React.FC = () => {
    const scrollRight = () => {
       carouselRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
    };
+
+   if (loading) return <div className="min-h-screen bg-nikon-black text-white flex justify-center items-center">Cargando...</div>;
+
+   if (!sessionUser) {
+     return (
+         <div className="pt-24 min-h-screen bg-nikon-black flex flex-col items-center justify-center p-6 text-center">
+             <AlertCircle size={64} className="text-nikon-yellow mb-6" />
+             <h1 className="text-3xl font-bold text-white mb-4">Acceso Restringido</h1>
+             <p className="text-gray-400 mb-8 max-w-md">Para gestionar tu equipo y recibir recomendaciones personalizadas, necesitas iniciar sesión en tu cuenta Nikon ID.</p>
+             <div className="flex gap-4">
+                 <button 
+                   onClick={() => navigate('/login')}
+                   className="bg-nikon-yellow text-black font-bold py-3 px-8 rounded hover:brightness-110 transition-all"
+                 >
+                   Iniciar Sesión
+                 </button>
+             </div>
+         </div>
+     );
+   }
 
   return (
     <div className="bg-nikon-black text-white flex-1 flex flex-col overflow-x-hidden font-sans relative">
@@ -90,9 +122,12 @@ const Recommendations: React.FC = () => {
                          <button className="text-gray-400 hover:text-white"><span className="material-symbols-outlined">bookmark_border</span></button>
                       </div>
                       <p className="text-gray-300 text-base leading-relaxed border-l-2 border-nikon-yellow pl-4">El rey del retrato para tu sistema Z. Su apertura de f/1.8 ofrece un desenfoque suave y una nitidez extrema incluso en los bordes.</p>
-                      <div className="flex flex-col sm:flex-row gap-4 mt-2 pt-4 border-t border-gray-800">
-                         <a href="https://www.nikoncenter.cl" target="_blank" rel="noreferrer" className="h-10 px-6 bg-nikon-yellow hover:bg-[#d9ad0b] text-black rounded font-medium text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"><span>Comprar en Nikon Center</span><span className="material-symbols-outlined text-[18px]">shopping_cart</span></a>
-                         <button className="h-10 px-6 bg-transparent border border-gray-600 hover:border-white text-white rounded font-medium text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"><span className="material-symbols-outlined text-[18px]">chat</span><span>Consultar al Asistente IA</span></button>
+                      <div className="flex flex-col sm:flex-row gap-4 items-center mt-2 pt-4 border-t border-gray-800">
+                         <span className="text-nikon-yellow text-2xl font-bold">$999.900</span>
+                         <a href="https://www.nikoncenter.cl/lentes/mirrorless/nikkor-z-85mm-f-18-s" target="_blank" rel="noreferrer" className="h-10 px-6 bg-nikon-yellow hover:bg-yellow-400 text-black rounded font-bold text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto">
+                           <span>Comprar en Nikon Center</span>
+                           <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                         </a>
                       </div>
                    </div>
                 </div>
@@ -111,9 +146,12 @@ const Recommendations: React.FC = () => {
                          <button className="text-nikon-text hover:text-white"><span className="material-symbols-outlined">bookmark_border</span></button>
                       </div>
                       <p className="text-nikon-text text-base leading-relaxed border-l-2 border-[#393528] pl-4">La cámara mirrorless DX compacta y ligera, optimizada para creadores de contenido, vloggers y streamers. Video 4K sin recorte.</p>
-                      <div className="flex flex-col sm:flex-row gap-4 mt-2 pt-4 border-t border-[#393528]">
-                         <a href="https://www.nikoncenter.cl" target="_blank" rel="noreferrer" className="h-10 px-6 bg-nikon-yellow hover:bg-[#d9ad0b] text-black rounded font-medium text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"><span>Comprar en Nikon Center</span><span className="material-symbols-outlined text-[18px]">shopping_cart</span></a>
-                         <button className="h-10 px-6 bg-transparent border border-[#504b3a] hover:border-white text-white rounded font-medium text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"><span className="material-symbols-outlined text-[18px]">chat</span><span>Consultar al Asistente IA</span></button>
+                      <div className="flex flex-col sm:flex-row gap-4 items-center mt-2 pt-4 border-t border-[#393528]">
+                         <span className="text-nikon-yellow text-2xl font-bold">$879.900</span>
+                         <a href="https://www.nikoncenter.cl/camaras/mirrorless/z30" target="_blank" rel="noreferrer" className="h-10 px-6 bg-nikon-yellow hover:bg-yellow-400 text-black rounded font-bold text-sm flex items-center justify-center gap-2 transition-colors w-full sm:w-auto">
+                           <span>Comprar en Nikon Center</span>
+                           <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                         </a>
                       </div>
                    </div>
                 </div>

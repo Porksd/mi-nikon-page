@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
 import { RESOURCES_DB } from '../data/resources';
-import { Loader2, Camera, Zap, Aperture, Image as ImageIcon, CheckCircle2, CircleDollarSign, Wrench } from 'lucide-react';
-import AIAssistantWidget from './AIAssistantWidget';
+import { Loader2, Upload, Sparkles, Camera, Aperture, AlertCircle, GraduationCap } from 'lucide-react';
+import { trackPageView } from '../utils/analyticsService';
+import { getRandomTip, PhotoTip } from '../utils/tipsService';
 
 interface Resource {
     type: string;
@@ -16,207 +17,265 @@ interface Resource {
     image: string;
 }
 
-// Sample Data for "Productos Recomendados" (Mirrors Recommendations.tsx logic)
-const FEATURED_PRODUCTS = [
-   {
-      id: 1,
-      name: 'Nikkor Z 24-120mm f/4 S',
-      category: 'Lente',
-      price: '$1.099.990',
-      image: 'https://www.nikoncenter.cl/uploads/objetivos/large/20250507-030236_1.png',
-      url: 'https://www.nikoncenter.cl/lentes/reflex/nikkor-z-24-120mm-f-40-s'
-   },
-   {
-      id: 2,
-      name: 'Nikon Z8',
-      category: 'Cámara',
-      price: '$3.599.990',
-      image: 'https://www.nikoncenter.cl/uploads/camaras/large/20230511-014029_1.png',
-      url: 'https://www.nikoncenter.cl/camaras/mirrorless/z8'
-   },
-   {
-      id: 3,
-      name: 'Flash SB-5000',
-      category: 'Iluminación',
-      price: '$549.990',
-      image: 'https://www.nikoncenter.cl/uploads/flashes/large/20180427-074252.png',
-      url: 'https://www.nikoncenter.cl/flashes/flash-sb-5000'
-   }
-];
-
 const Benefits: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [userGear, setUserGear] = useState<any[]>([]);
-  // Use a ref to hold the full list of resources after filtering by gear initially
-  const [matchingResources, setMatchingResources] = useState<Resource[]>([]);
-  const [displayedResources, setDisplayedResources] = useState<Resource[]>([]);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(3);
+    const navigate = useNavigate();
+    const [sessionUser, setSessionUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-  // AI Assistant State
-  const [isAIOpen, setIsAIOpen] = useState(false);
-  const [aiInitialMsg, setAiInitialMsg] = useState('');
-  const [aiContext, setAiContext] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('Todos');
+    const [userGear, setUserGear] = useState<any[]>([]);
+    const [recommendedResources, setRecommendedResources] = useState<Resource[]>([]);
+    const [activeFilter, setActiveFilter] = useState('Todo');
+    const [showAllResources, setShowAllResources] = useState(false);
+    const [dailyTip, setDailyTip] = useState<PhotoTip | null>(null);
 
-  const openAI = (msg: string, context: string = '') => {
-      setAiInitialMsg(msg);
-      setAiContext(context);
-      setIsAIOpen(true);
-  };
+    const FILTERS = ['Todo', 'Cámaras Réflex', 'Lentes', 'Flash', 'Mirrorless'];
 
-  useEffect(() => {
-    fetchUserGearAndResources();
-  }, []);
+    useEffect(() => {
+        trackPageView('/benefits', 'Mi Espacio Creativo');
 
-  // Icon mapping helper
-  interface Resource {
-    type: string;
-    icon?: string;
-    category?: string;
-    keywords: string[];
-    title: string;
-    description: string;
-    url: string;
-    image: string;
-  } 
-
-  const renderIcon = (resource: Resource) => {
-      // First try based on explicit icon name
-      if (resource.icon) {
-        switch (resource.icon) {
-            case 'Camera': return <Camera className="w-5 h-5" />;
-            case 'Zap': return <Zap className="w-5 h-5" />;
-            case 'Aperture': return <Aperture className="w-5 h-5" />;
-        }
-      }
-      // Fallback based on type
-      switch (resource.type) {
-          case 'camera': return <Camera className="w-5 h-5" />;
-          case 'lens': return <Aperture className="w-5 h-5" />;
-          case 'flash': return <Zap className="w-5 h-5" />;
-          default: return <ImageIcon className="w-5 h-5" />;
-      }
-  };
-
-  const fetchUserGearAndResources = async () => {
-    try {
-        setLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.user) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSessionUser(session?.user);
             setLoading(false);
-            return;
-        }
+        });
 
-        // 1. Fetch User Products (using same logic as Gear.tsx to include email matches)
-        const { data: products, error } = await supabase
-            .from('user_products')
-            .select(`
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (_event === 'SIGNED_OUT') {
+                setSessionUser(null);
+                setUserGear([]); // Clear gear on logout
+                setRecommendedResources([]);
+            } else if (session?.user) {
+                setSessionUser(session.user);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (sessionUser) {
+            trackPageView('/benefits', 'Tu Espacio Creativo');
+            setDailyTip(getRandomTip());
+            fetchUserGearAndResources();
+
+            // Lógica para detectar si venimos del Home con un tip para profundizar
+            const navState = window.history.state?.usr;
+            if (navState?.autoStartTip && navState?.tipMessage) {
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('deepen-tip', { 
+                        detail: { message: navState.tipMessage } 
+                    }));
+                    // Limpia el estado para evitar re-ejecución al navegar atrás/adelante
+                    window.history.replaceState({}, document.title);
+                }, 800);
+            }
+        }
+    }, [sessionUser]);
+
+    const fetchUserGearAndResources = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session?.user) {
+                setLoading(false);
+                return;
+            }
+
+            // 1. Fetch User Products (CRM / Registered)
+            const { data: products, error } = await supabase
+                .from('user_products')
+                .select(`
                 id,
                 product:products (
                     name,
                     category
                 )
             `)
-            .or(`user_id.eq.${session.user.id},customer_email.eq.${session.user.email}`);
+                .eq('user_id', session.user.id);
 
-        if (error) throw error;
-        
-        const gear = products?.map((p: any) => {
-             const prod = Array.isArray(p.product) ? p.product[0] : p.product;
-             return {
-                name: prod?.name || '',
-                category: prod?.category || ''
-             };
-        }) || [];
-        
-        setUserGear(gear);
+            if (error) throw error;
 
-        // 2. Filter Resources based on Gear
-        const relevantResources: Resource[] = [];
-        const addedTitles = new Set();
-        
-        // Initial Fetch: Get ALL resources that are from nikoncenter.cl (or relax if needed)
-        // AND match the user gear types.
-        
-        // Let's populate 'matchingResources' with everything initially relevant
-        // The user says "En Mi espacio creativo... ahora sólo aparecen los filtros, pero ningún tutorial/articulo."
-        // This implies my previous logic was too strict or the 'nikoncenter.cl' filter killed everything.
-        // Let's relax the domain filter for now OR check if the data actually has those URLs.
-        // Looking at data/resources.ts, most are 'nikonamericalatina.com'. user specified "sólo desde Learn & Explore Chile".
-        // If data is from .com, I should probably ALLOW them if they are the only ones, OR filtering strictly leads to empty.
-        // User said: "Tutoriales personalizados sólo desde Learn & Explore Chile con filtros".
-        // Assuming 'nikonamericalatina.com' IS what they mean by Learn & Explore (as it's often shared), 
-        // OR I need to look for 'nikoncenter.cl' specifically. 
-        // Let's include both for now to ensure content appears, but prioritize local.
-        
-        gear.forEach(item => {
-             // ... logic ...
-             RESOURCES_DB.forEach(resource => {
-                 // ... matching logic ...
-                 // Copy existing logic but fix the push
-                 const itemCategoryLower = item.category?.toLowerCase() || '';
-                 const itemNameLower = item.name.toLowerCase();
-                 
-                 const matchesType = 
-                    (itemCategoryLower.includes('cámara') || itemCategoryLower.includes('body') || itemCategoryLower.includes('kit')) ? resource.type === 'camera' :
-                    (itemCategoryLower.includes('lente') || itemCategoryLower.includes('objetivo')) ? resource.type === 'lens' :
-                    (itemCategoryLower.includes('flash') || itemCategoryLower.includes('speedlight')) ? resource.type === 'flash' : true;
+            let gear = products?.map((p: any) => {
+                const prod = Array.isArray(p.product) ? p.product[0] : p.product;
+                return {
+                    name: prod?.name || '',
+                    category: prod?.category || ''
+                };
+            }) || [];
+
+            // 2. Fetch User Equipment (Manually added via Mi Equipo)
+            const { data: manualGear, error: manualError } = await supabase
+                .from('user_equipment')
+                .select('product_name, product_type');
+
+            if (!manualError && manualGear) {
+                const manual = manualGear.map((m: any) => ({
+                    name: m.product_name,
+                    category: m.product_type,
+                    isManual: true
+                }));
+                // Merge and deduplicate by name
+                const allGear = [...gear, ...manual];
+                const uniqueGear = Array.from(new Map(allGear.map(item => [item.name, item])).values());
                 
-                 if (!matchesType) return;
-                 
-                 const matchesKeyword = resource.keywords.some(k => itemNameLower.includes(k));
-                 const isMirrorless = itemNameLower.includes('z') && !itemNameLower.includes('zoom');
-                 const isDSLR = itemNameLower.startsWith('d') && !isNaN(parseInt(itemNameLower.substring(1,2)));
-                 const matchesCategory = (resource.category === 'mirrorless' && isMirrorless) || (resource.category === 'dslr' && isDSLR);
-                 const matchesGenericLens = resource.type === 'lens' && (itemCategoryLower.includes('lente') || itemCategoryLower.includes('objetivo'));
+                // Ordenar: Cámara Z, Cámara Reflex, Lente Z, Lente Reflex
+                const sortedGear = [...uniqueGear].sort((a, b) => {
+                    const isZ = (name: string) => {
+                        const n = name.toUpperCase();
+                        return (n.startsWith('Z') && (n.includes(' ') || n.length < 8)) || n.startsWith('NIKON Z') || n.includes('NIKKOR Z');
+                    };
 
-                 if (matchesKeyword || matchesCategory || matchesGenericLens) {
-                     if (!resource.url.includes('nikoncenter.cl')) return;
-                     if (!addedTitles.has(resource.title)) {
-                         relevantResources.push(resource);
-                         addedTitles.add(resource.title);
-                     }
-                 }
-             });
-        });
+                    const getPriority = (item: any) => {
+                        const isCamera = item.category === 'camera' || (item.category && item.category.toLowerCase().includes('camara')) || (item.product_type === 'camera');
+                        const isZSeries = isZ(item.name);
 
-        if (relevantResources.length === 0 && gear.length === 0) {
-             // Fallback
-             setMatchingResources(RESOURCES_DB);
-             setDisplayedResources(RESOURCES_DB);
-        } else {
-            setMatchingResources(relevantResources);
-            setDisplayedResources(relevantResources);
+                        if (isCamera && isZSeries) return 1; // Cámara Z
+                        if (isCamera && !isZSeries) return 2; // Cámara Reflex
+                        if (!isCamera && isZSeries) return 3; // Lente Z
+                        return 4; // Lente Reflex
+                    };
+
+                    return getPriority(a) - getPriority(b);
+                });
+                
+                gear = sortedGear;
+            }
+
+            console.log('DEBUG - ALL GEAR AFTER SORT:', gear);
+            
+            // ELIMINADO EL FILTRO FORZADO DE D7200 PARA PERMITIR COEXISTENCIA CON Z
+            // Si el usuario tiene una Z7 II y una D7200, ahora verá la Z7 II como principal
+            
+            setUserGear(gear);
+
+            // =====================================================================
+            // FILOSOFÍA DE NEGOCIO: Incluir TODO el equipo Nikon del usuario
+            // =====================================================================
+            // - Si no hay equipo, mostramos sugerencia de agregar.
+            // =====================================================================
+
+            if (gear.length === 0) {
+                setRecommendedResources([]); // Clear to show the "Add Gear" CTA
+                return;
+            }
+
+            // 2. Filter Resources based on ALL user gear (registered or not)
+            const relevantResources: Resource[] = [];
+            const addedTitles = new Set();
+
+            // Helper function to detect equipment type (same logic as Gear.tsx isRegistrable)
+            const detectEquipmentType = (name: string, category: string): { type: string, subCategory: string } | null => {
+                const search = (category + ' ' + name).toLowerCase();
+
+                // Detect Z Series (Mirrorless)
+                const isZSeries = (/\bz\s?[0-9a-z]+\b/.test(search) || search.includes('nikkor z')) && !search.includes('zoom');
+                if (isZSeries) return { type: 'camera', subCategory: 'mirrorless' };
+
+                // Detect DSLR (D followed by number)
+                const isDSLR = (/\bd[0-9]/.test(search) || search.includes('reflex') || search.includes('dslr')) && !search.includes('nikkor z');
+                if (isDSLR) return { type: 'camera', subCategory: 'dslr' };
+
+                // Detect Lenses
+                if (search.includes('lente') || search.includes('objetivo') || search.includes('nikkor') || /\d+-\d+mm/.test(search)) {
+                    // Check if it's a Z lens
+                    if (search.includes('nikkor z') || search.includes('lente z') || search.includes(' z ')) {
+                        return { type: 'lens', subCategory: 'mirrorless' };
+                    }
+                    return { type: 'lens', subCategory: 'lens' };
+                }
+
+                // Detect Flash
+                if (search.includes('flash') || search.includes('speedlight') || search.includes('sb-')) {
+                    return { type: 'flash', subCategory: 'flash' };
+                }
+
+                // Coolpix - still include but as compact camera
+                if (search.includes('coolpix')) {
+                    return { type: 'camera', subCategory: 'coolpix' };
+                }
+
+                // Sport Optics, Accessories - include for community but may not have specific resources
+                if (search.includes('binocular') || search.includes('monarch') || search.includes('prostaff')) {
+                    return { type: 'optics', subCategory: 'sport_optics' };
+                }
+
+                return null; // Accessories like bags, straps, batteries - not excluded, just no specific learning resources
+            };
+
+            gear.forEach(item => {
+                const itemNameLower = item.name.toLowerCase();
+                const itemCategoryLower = item.category?.toLowerCase() || '';
+
+                const equipmentInfo = detectEquipmentType(itemNameLower, itemCategoryLower);
+
+                console.log('DEBUG - Processing gear item:', item.name, 'Detected info:', equipmentInfo);
+
+                if (!equipmentInfo) return;
+
+                RESOURCES_DB.forEach(resource => {
+                    const resourceCategory = resource.category;
+                    const equipmentCategory = equipmentInfo.subCategory;
+
+                    // Match by equipment type (camera, lens, flash)
+                    const matchesType = resource.type === equipmentInfo.type;
+                    if (!matchesType) return;
+
+                    // Match by specific keyword IN the name (e.g., 'd7200' in name matches 'd7200' in keywords)
+                    const matchesKeyword = resource.keywords.some(k => itemNameLower.includes(k.toLowerCase()));
+
+                    // Match by broad category (e.g., 'dslr' matches 'dslr')
+                    const matchesCategory = resource.category === equipmentInfo.subCategory;
+
+                    // CRITICAL BLOCK: PREVENT CROSS-GENERATION RECOMMENDATIONS
+                    // If the resource specifies a category (mirrorless/dslr), it MUST match the equipment category.
+                    if (resourceCategory && equipmentCategory && resourceCategory !== equipmentCategory) {
+                        return;
+                    }
+
+                    // If it's a camera-typed resource but equipment is a lens, it should have been caught by matchesType
+                    // but we verify that either a specific keyword matched or the general category matched.
+                    if ((matchesKeyword || matchesCategory) && !addedTitles.has(resource.title)) {
+                        console.log('DEBUG - Adding resource:', resource.title, 'for equipment:', item.name);
+                        relevantResources.push(resource);
+                        addedTitles.add(resource.title);
+                    }
+                });
+            });
+
+            // If no specific resources found (or no gear), show some defaults
+            if (relevantResources.length === 0) {
+                // Fallback: Show general photography tips
+                const fallback = RESOURCES_DB.filter(r => r.title.includes('Depth') || r.title.includes('Light'));
+                setRecommendedResources(fallback);
+            } else {
+                setRecommendedResources(relevantResources);
+            }
+
+        } catch (error) {
+            console.error("Error loading benefits:", error);
         }
+    };
 
-    } catch (error) {
-        console.error("Error loading benefits:", error);
-    } finally {
-        setLoading(false);
+    if (loading) return <div className="min-h-screen bg-nikon-black text-white flex justify-center items-center">Cargando...</div>;
+
+    if (!sessionUser) {
+        return (
+            <div className="pt-24 min-h-screen bg-nikon-black flex flex-col items-center justify-center p-6 text-center">
+                <AlertCircle size={64} className="text-nikon-yellow mb-6" />
+                <h1 className="text-3xl font-bold text-white mb-4">Acceso Restringido</h1>
+                <p className="text-gray-400 mb-8 max-w-md">Para acceder a tu Espacio Creativo y recursos exclusivos, necesitas iniciar sesión en tu cuenta Nikon ID.</p>
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="bg-nikon-yellow text-black font-bold py-3 px-8 rounded hover:brightness-110 transition-all"
+                    >
+                        Iniciar Sesión
+                    </button>
+                </div>
+            </div>
+        );
     }
-  };
-
-  const handleFilter = (category: string | null) => {
-      setActiveFilter(category);
-      setVisibleCount(3);
-      if (!category) {
-          setDisplayedResources(matchingResources);
-          return;
-      }
-
-      // Filter based on the selected category chip
-      const filtered = matchingResources.filter(resource => {
-          if (category === 'Cámaras ZSeries' || category === 'Cámaras Réflex') return resource.type === 'camera';
-          if (category === 'Lentes') return resource.type === 'lens';
-          if (category === 'Flash') return resource.type === 'flash';
-          return true;
-      });
-      setDisplayedResources(filtered);
-  };
-    
-  // Helper to extract unique main gear names for chips
-    const mainGearNames = ['Cámaras ZSeries', 'Cámaras Réflex', 'Lentes', 'Flash'];
 
   return (
     <div className="flex-1 w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -234,6 +293,20 @@ const Benefits: React.FC = () => {
              Recursos seleccionados específicamente para tu equipo Nikon. Saca el máximo provecho a tus herramientas.
           </p>
         </div>
+        
+        {userGear.length > 0 && (
+            <div className="bg-nikon-surface border border-nikon-border rounded-lg p-3 flex items-center gap-3">
+                <div className="bg-nikon-yellow text-black p-2 rounded-full">
+                    <span className="material-symbols-outlined text-xl">camera_alt</span>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-400 uppercase font-bold">Tu Equipo Detectado</p>
+                    <p className="text-white text-sm font-medium truncate max-w-[200px]">
+                        {userGear.map(g => g.name).join(', ')}
+                    </p>
+                </div>
+            </div>
+        )}
       </div>
 
       {loading ? (
@@ -241,243 +314,215 @@ const Benefits: React.FC = () => {
             <Loader2 className="animate-spin text-nikon-yellow w-12 h-12" />
         </div>
       ) : (
-        <div className="flex flex-col gap-12">
-            
-            {/* AI Image Recognition Promo */}
-            <section className="bg-gradient-to-r from-[#2a2a2a] to-nikon-black border border-nikon-border rounded-xl p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-nikon-yellow/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-                <div className="flex-1 relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-nikon-yellow/20 text-nikon-yellow text-xs font-bold uppercase tracking-wider mb-4 border border-nikon-yellow/20">
-                         <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                         Nueva Función Beta
+        <div className="flex flex-col gap-10">
+        
+            {/* AI Image Recognition Feature - DESTACADO */}
+            <section className="bg-gradient-to-r from-nikon-surface to-nikon-dark rounded-2xl border border-nikon-border overflow-hidden">
+                <div className="flex flex-col md:flex-row">
+                    <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="bg-nikon-yellow/20 text-nikon-yellow text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                                <Sparkles size={12} /> NUEVA FUNCIÓN BETA
+                            </span>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                            Descubre los secretos detrás de tu foto
+                        </h2>
+                        <p className="text-gray-400 mb-6 max-w-md">
+                            Sube tu imagen y deja que nuestro Asistente Virtual analice la información de la toma para ayudarte a mejorar tu técnica.
+                        </p>
+                        <Link 
+                            to="/" 
+                            className="inline-flex items-center gap-2 bg-nikon-yellow text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-400 transition-colors w-fit"
+                        >
+                            <Upload size={18} />
+                            Probar AI Image Rec
+                        </Link>
                     </div>
-                    <h2 className="text-3xl font-black text-white mb-4">Descubre los secretos detrás de tu foto</h2>
-                    <p className="text-gray-400 mb-6 text-lg">
-                        Sube tu imagen y deja que nuestro Asistente Virtual analice la información de la toma para ayudarte a mejorar tu técnica.
-                    </p>
-                    <button onClick={() => openAI('Quiero analizar una foto.', 'El usuario quiere usar la herramienta de análisis de imagen.')} className="px-8 py-3 bg-nikon-yellow text-black font-bold rounded hover:bg-[#d9ad0b] transition-colors flex items-center gap-2">
-                        <span className="material-symbols-outlined">upload_file</span>
-                        Probar AI Image Rec
-                    </button>
-                </div>
-                <div className="w-full md:w-1/3 relative z-10">
-                   <div className="aspect-square bg-gray-800 rounded-lg border border-gray-700 flex items-center justify-center overflow-hidden">
-                       <img src="/images/espacio/foto_referencia.jpg" alt="AI Analysis" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                   </div>
+                    {/* Visual de fondo para la sección AI y componente Tips */}
+                    <div className="w-full md:w-2/5 aspect-video md:aspect-auto relative bg-nikon-dark flex items-center justify-center p-4">
+                        <img 
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA41ACoh1gSPPMc6tIGgjc4q9xjtpMDTRB1ZkaxvdR40U1RMQnE64YIPid8cnQ76VErUExsE-cp958yU2SaX4cWZN9J_xhu-8nolzpkaiHCLJKtKN2mVVtBt5vhybNzFkJ_87w8-l4c2TYdoBOMfD78yXohL5FxJjkicqrRUpQkleAhoRzBaEuqE4AKxz0djgMCD0smAuWolNC5X6g7cAsK720GI__-29hY9-tANSfTn31td9R9eLVl92SeRkdv89WIv_HN_P8nZE8"
+                            alt="AI Image Recognition"
+                            className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30"
+                        />
+                        
+                        <div className="w-full h-fit bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-5 shadow-2xl z-10">
+                            {dailyTip ? (
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-nikon-yellow flex items-center justify-center shrink-0 shadow-lg shadow-nikon-yellow/20">
+                                                <span className="material-symbols-outlined text-black font-bold text-xl">tips_and_updates</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] uppercase font-black text-nikon-yellow tracking-widest leading-none mb-1">
+                                                    SABÍAS QUE: {dailyTip.category}
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="text-sm md:text-base font-black text-white leading-tight uppercase font-display">{dailyTip.title}</h4>
+                                                    <button 
+                                                        onClick={() => setDailyTip(getRandomTip())}
+                                                        className="text-white/40 hover:text-nikon-yellow transition-colors flex items-center justify-center"
+                                                        title="Siguiente Tip"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl">arrow_forward</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => {
+                                                    window.dispatchEvent(new CustomEvent('deepen-tip', { 
+                                                        detail: { message: `Hola, me gustaría profundizar más sobre este concepto de fotografía: ${dailyTip.title}. Explícame de qué trata de forma sencilla y dame 3 consejos prácticos.` } 
+                                                    }));
+                                                }}
+                                                className="bg-nikon-yellow text-black text-[9px] font-black px-3 py-2 rounded uppercase tracking-tighter hover:brightness-110 transition-all flex items-center gap-1.5 shrink-0"
+                                            >
+                                                <GraduationCap size={12} />
+                                                Aprender más
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="text-white/80 text-[11px] leading-relaxed font-medium italic pr-4 mt-1">
+                                        "{dailyTip.content}"
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="animate-pulse flex flex-col gap-4">
+                                    <div className="h-4 bg-white/20 rounded w-1/4"></div>
+                                    <div className="h-8 bg-white/20 rounded w-3/4"></div>
+                                    <div className="h-20 bg-white/20 rounded w-full"></div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </section>
-
-            {/* Gear Filters */}
-            {userGear.length > 0 && (
-                <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-sm font-bold text-gray-400 mr-2 uppercase tracking-wider">Filtrar por:</span>
-                    
-                    <button 
-                        onClick={() => handleFilter(null)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all border ${
-                            activeFilter === null 
-                            ? 'bg-nikon-yellow text-black border-nikon-yellow' 
-                            : 'bg-transparent text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'
+            
+            {/* Filters */}
+            <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm text-gray-400 font-medium">FILTRAR POR:</span>
+                {FILTERS.map(filter => (
+                    <button
+                        key={filter}
+                        onClick={() => setActiveFilter(filter)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                            activeFilter === filter 
+                                ? 'bg-nikon-yellow text-black' 
+                                : 'bg-nikon-surface border border-nikon-border text-gray-300 hover:border-nikon-yellow/50'
                         }`}
                     >
-                        Todo
+                        {filter}
                     </button>
-
-                    {mainGearNames.map((name, idx) => {
-                         // Simplify Filter Logic for UI: Check if user has gear in this bucket
-                         const hasGear = userGear.some(g => {
-                            const cat = (g.category || '').toLowerCase();
-                            const n = (g.name || '').toLowerCase();
-                            
-                            if (name === 'Cámaras ZSeries') {
-                                return (n.includes('nikon z') || /\bz\s?[0-9a-z]+\b/.test(n)) && 
-                                       !n.includes('nikkor') && !n.includes('ftz') && !n.includes('mount');
-                            }
-                            if (name === 'Cámaras Réflex') {
-                                return /\bd\s?[0-9]{1,4}\b/.test(n) || n.includes('d6') || n.includes('d850');
-                            }
-                            if (name === 'Lentes') {
-                                return n.includes('nikkor') || cat.includes('lente') || cat.includes('objetivo');
-                            }
-                            if (name === 'Flash') {
-                                return n.includes('sb-') || n.includes('speedlight') || cat.includes('flash') || cat.includes('iluminación');
-                            }
-                            return false;
-                         });
-                         
-                         if (!hasGear) return null;
-
-                         return (
-                            <button 
-                                key={idx}
-                                onClick={() => handleFilter(name)}
-                                className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all border flex items-center gap-2 ${
-                                    activeFilter === name
-                                    ? 'bg-nikon-yellow text-black border-nikon-yellow' 
-                                    : 'bg-transparent text-gray-400 border-gray-700 hover:border-gray-500 hover:text-white'
-                                }`}
-                            >
-                                {name}
-                                {activeFilter === name && <CheckCircle2 className="w-3 h-3" />}
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
+                ))}
+            </div>
+            
             {/* Dynamic Resources Section */}
             <section>
                 <div className="flex items-center gap-2 mb-6">
-                    <span className="material-symbols-outlined text-nikon-yellow">school</span>
-                    <h2 className="text-2xl font-bold text-white">
-                        {activeFilter ? `Recomendado para ${activeFilter}` : 'Recomendado para Ti'}
-                    </h2>
+                    <Sparkles className="text-nikon-yellow" size={20} />
+                    <h2 className="text-2xl font-bold text-white">Recomendado para Ti</h2>
                 </div>
-                {displayedResources.length > 0 ? (
+                
+                {recommendedResources.length > 0 ? (
                     <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {displayedResources.slice(0, visibleCount).map((resource, idx) => (
-                                <a 
-                                    key={idx} 
-                                    href={resource.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="group bg-nikon-surface rounded-xl border border-nikon-border overflow-hidden hover:border-nikon-yellow/50 transition-all flex flex-col h-full"
-                                >
-                                    <div className="aspect-video bg-gray-800 relative overflow-hidden flex items-center justify-center group-hover:bg-gray-700 transition-colors">
-                                        {/* Icon-based Image Replacement */}
-                                        <div className="text-gray-500 group-hover:text-nikon-yellow transition-colors transform scale-150 group-hover:scale-175 duration-500">
-                                            {React.cloneElement(renderIcon(resource) as React.ReactElement, { className: 'w-24 h-24 opacity-20' })}
-                                        </div>
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            {/* Center Main Icon */}
-                                            <div className="bg-nikon-dark/80 p-4 rounded-full border border-gray-700 backdrop-blur-sm group-hover:border-nikon-yellow/50 transition-colors">
-                                                {React.cloneElement(renderIcon(resource) as React.ReactElement, { className: 'w-8 h-8 text-white' })}
-                                            </div>
-                                        </div>
-
-                                        <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded border border-white/10 uppercase">
-                                            {resource.type}
-                                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {recommendedResources
+                            .filter(r => {
+                                if (activeFilter === 'Todo') return true;
+                                if (activeFilter === 'Cámaras Réflex') return r.type === 'camera' && r.category === 'dslr';
+                                if (activeFilter === 'Mirrorless') return r.type === 'camera' && r.category === 'mirrorless';
+                                if (activeFilter === 'Lentes') return r.type === 'lens';
+                                if (activeFilter === 'Flash') return r.type === 'flash';
+                                return true;
+                            })
+                            .slice(0, showAllResources ? undefined : 6)
+                            .map((resource, idx) => (
+                            <a 
+                                key={idx} 
+                                href={resource.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="group bg-nikon-surface rounded-xl border border-nikon-border overflow-hidden hover:border-nikon-yellow/50 transition-all flex flex-col h-full"
+                            >
+                                {/* Icon Badge */}
+                                <div className="p-6 pb-4">
+                                    <div className="bg-nikon-dark w-12 h-12 rounded-full flex items-center justify-center mb-4 border border-nikon-border">
+                                        {resource.type === 'camera' ? (
+                                            <Camera className="text-gray-400" size={24} />
+                                        ) : resource.type === 'lens' ? (
+                                            <Aperture className="text-gray-400" size={24} />
+                                        ) : (
+                                            <Sparkles className="text-gray-400" size={24} />
+                                        )}
                                     </div>
-                                    <div className="p-5 flex-1 flex flex-col">
-                                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-nikon-yellow transition-colors line-clamp-2">
-                                            {resource.title}
-                                        </h3>
-                                        <p className="text-gray-400 text-sm mb-4 line-clamp-3 flex-1">
-                                            {resource.description}
-                                        </p>
-                                        <div className="flex justify-between items-center pt-4 border-t border-gray-800">
-                                            <span className="text-xs text-gray-500">Nikon Center</span>
-                                            <span className="text-nikon-yellow text-sm font-bold flex items-center gap-1">
-                                                Ver Recurso <span className="material-symbols-outlined text-base">open_in_new</span>
-                                            </span>
-                                        </div>
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        {resource.type === 'camera' ? 'CAMERA' : resource.type === 'lens' ? 'LENS' : resource.type?.toUpperCase()}
+                                    </span>
+                                </div>
+                                
+                                <div className="px-6 pb-6 flex-1 flex flex-col">
+                                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-nikon-yellow transition-colors">
+                                        {resource.title}
+                                    </h3>
+                                    <p className="text-gray-400 text-sm mb-4 line-clamp-3 flex-1">
+                                        {resource.description}
+                                    </p>
+                                    <div className="flex justify-between items-center pt-4 border-t border-gray-800">
+                                        <span className="text-xs text-gray-500">Nikon Center</span>
+                                        <span className="text-nikon-yellow text-sm font-bold flex items-center gap-1">
+                                            Ver Recurso <span className="material-symbols-outlined text-base">open_in_new</span>
+                                        </span>
                                     </div>
-                                </a>
-                            ))}
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                    
+                    {/* Ver más recursos button */}
+                    {recommendedResources.length > 6 && !showAllResources && (
+                        <div className="flex justify-center mt-8">
+                            <button
+                                onClick={() => setShowAllResources(true)}
+                                className="flex items-center gap-2 text-gray-300 hover:text-white font-medium transition-colors"
+                            >
+                                Ver más recursos
+                                <span className="material-symbols-outlined">expand_more</span>
+                            </button>
                         </div>
-                        {displayedResources.length > visibleCount && (
-                             <div className="flex justify-center mt-8">
-                                 <button 
-                                    onClick={() => setVisibleCount(prev => prev + 3)}
-                                    className="px-6 py-2 bg-nikon-surface border border-nikon-border text-white font-bold rounded-full hover:bg-nikon-yellow hover:text-black hover:border-nikon-yellow transition-all flex items-center gap-2"
-                                 >
-                                     Ver más recursos
-                                     <span className="material-symbols-outlined">expand_more</span>
-                                 </button>
-                             </div>
-                        )}
+                    )}
                     </>
                 ) : (
                     <div className="bg-nikon-surface border border-nikon-border rounded-xl p-8 text-center">
-                        <span className="material-symbols-outlined text-4xl text-gray-500 mb-4">inbox</span>
-                        <h3 className="text-xl font-bold text-white mb-2">No encontramos recursos específicos</h3>
-                        <p className="text-gray-400 mb-6">Prueba seleccionando otro equipo o explora las categorías generales.</p>
-                        <button onClick={() => handleFilter(null)} className="text-nikon-yellow font-bold hover:underline">
-                            Ver todo
-                        </button>
+                        <span className="material-symbols-outlined text-4xl text-gray-500 mb-4">photo_camera</span>
+                        <h3 className="text-xl font-bold text-white mb-2">¡Bienvenido a la familia Nikon!</h3>
+                        <p className="text-gray-400 mb-6">
+                            Agrega tu equipo Nikon para recibir tutoriales, tips y recursos personalizados. 
+                            No importa dónde lo hayas comprado - si eres Nikon, eres familia.
+                        </p>
+                        <Link to="/gear" className="bg-nikon-yellow text-black font-bold py-2 px-6 rounded-full hover:bg-yellow-400 transition-colors">
+                            Agregar Mi Equipo
+                        </Link>
                     </div>
                 )}
             </section>
 
-            {/* Replacement for Static Categories: AI Helper Buttons */}
+            {/* General Categories (Static Fallback) */}
             <section className="pt-8 border-t border-gray-800">
-                <h2 className="text-xl font-bold text-white mb-6">¿Necesitas Ayuda?</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                     <button 
-                        onClick={() => openAI('Quiero consejos para tomar una buena fotografía.', 'El usuario busca tips generales de fotografía.')}
-                        className="bg-nikon-surface hover:bg-nikon-surface/80 border border-nikon-border rounded-xl p-6 text-left transition-all group"
-                     >
-                         <div className="w-10 h-10 rounded-full bg-nikon-black flex items-center justify-center mb-4 group-hover:text-nikon-yellow transition-colors">
-                             <Camera className="w-5 h-5 text-gray-300 group-hover:text-nikon-yellow" />
+                <h2 className="text-xl font-bold text-white mb-6">Explorar por Categoría</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     {['Retrato', 'Paisaje', 'Deportes', 'Macro'].map((cat) => (
+                         <div key={cat} className="bg-nikon-dark border border-nikon-border rounded-lg p-4 hover:bg-nikon-surface transition-colors cursor-pointer text-center group">
+                             <h4 className="font-bold text-gray-300 group-hover:text-white">{cat}</h4>
                          </div>
-                         <h4 className="font-bold text-white mb-1 group-hover:text-nikon-yellow">Tomar una buena fotografía</h4>
-                         <p className="text-sm text-gray-400">Consejos de composición y más.</p>
-                     </button>
-
-                     <button 
-                        onClick={() => openAI('Quiero mejorar mi equipo actual.', `Mi equipo actual: ${userGear.map(g=>g.name).join(', ')}`)}
-                        className="bg-nikon-surface hover:bg-nikon-surface/80 border border-nikon-border rounded-xl p-6 text-left transition-all group"
-                     >
-                         <div className="w-10 h-10 rounded-full bg-nikon-black flex items-center justify-center mb-4 group-hover:text-nikon-yellow transition-colors">
-                             <CircleDollarSign className="w-5 h-5 text-gray-300 group-hover:text-nikon-yellow" />
-                         </div>
-                         <h4 className="font-bold text-white mb-1 group-hover:text-nikon-yellow">Mejorar mi equipo</h4>
-                         <p className="text-sm text-gray-400">Recomendaciones personalizadas.</p>
-                     </button>
-
-                     <button 
-                         onClick={() => openAI('Tengo una consulta técnica sobre mi equipo.', `Mi equipo: ${userGear.map(g=>g.name).join(', ')}`)}
-                         className="bg-nikon-surface hover:bg-nikon-surface/80 border border-nikon-border rounded-xl p-6 text-left transition-all group"
-                     >
-                         <div className="w-10 h-10 rounded-full bg-nikon-black flex items-center justify-center mb-4 group-hover:text-nikon-yellow transition-colors">
-                             <Wrench className="w-5 h-5 text-gray-300 group-hover:text-nikon-yellow" />
-                         </div>
-                         <h4 className="font-bold text-white mb-1 group-hover:text-nikon-yellow">Consulta técnica</h4>
-                         <p className="text-sm text-gray-400">Resuelve dudas de configuración.</p>
-                     </button>
-                </div>
-            </section>
-
-             {/* Recommended Products */}
-             <section className="pt-8 border-t border-gray-800">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-white">Seleccionados para ti</h2>
-                    <span className="text-xs font-bold text-nikon-yellow uppercase tracking-wider">Nikon Center Chile</span>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {FEATURED_PRODUCTS.map((product) => (
-                        <a 
-                           key={product.id} 
-                           href={product.url} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="bg-nikon-black border border-nikon-border rounded-lg overflow-hidden hover:border-nikon-yellow transition-colors flex flex-col"
-                        >
-                            <div className="aspect-[4/3] bg-white relative p-4 flex items-center justify-center">
-                                <span className="absolute top-2 left-2 bg-nikon-yellow text-black text-[10px] font-bold px-2 py-0.5 rounded uppercase">{product.category}</span>
-                                <img src={product.image} alt={product.name} className="max-w-full max-h-full object-contain" />
-                            </div>
-                            <div className="p-4 flex-1 flex flex-col">
-                                <h3 className="text-sm font-bold text-white mb-1">{product.name}</h3>
-                                <p className="text-gray-400 text-xs mb-3 flex-1">Compatible con tu equipo</p>
-                                <div className="text-nikon-yellow font-bold text-sm">{product.price}</div>
-                            </div>
-                        </a>
-                    ))}
+                     ))}
                 </div>
             </section>
         </div>
       )}
-      
-      <AIAssistantWidget 
-         isOpen={isAIOpen} 
-         onClose={() => setIsAIOpen(false)}
-         initialMessage={aiInitialMsg}
-         context={aiContext}
-      />
     </div>
   );
 };

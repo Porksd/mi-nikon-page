@@ -20,90 +20,116 @@ export const sendMessageToGemini = async (
     message: string,
     history: ChatHistoryItem[],
     image?: { mimeType: string; data: string },
-    modelType: ModelType = 'fast'
+    modelType: ModelType = 'fast',
+    systemInstructionExtra?: string
 ): Promise<string> => {
 
     if (!apiKey) {
         console.warn("API Key is missing. Check VITE_GEMINI_API_KEY");
-        // Fallback for demo without key
-        if (message.toLowerCase().includes('hola')) return "Hola, soy Nikon AI (Modo Demo). Para activarme completamente, configura la API Key.";
-        return "Modo Demo: No puedo procesar solicitudes complejas sin API Key.";
+        if (message.toLowerCase().includes('hola')) return "Hola, soy Nikon AI (Modo Demo). No tengo API Key configurada.";
+        return "Modo Demo: Sin API Key.";
     }
 
-    // Model Selection
-    // fast -> gemini-2.0-flash (Quick, efficient)
-    // think -> gemini-2.0-pro (Reasoning, complex tasks)
-    // Nombres actualizados para 2026 (Serie Gemini 2.0)
-    // Usamos los alias 'latest' que están presentes en la lista de modelos permitidos
-    const modelName = modelType === 'think' ? 'gemini-pro-latest' : 'gemini-flash-latest';
-
-    // v1beta es necesario para system_instruction
+    const modelName = 'gemini-2.5-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    const contents = history.map(h => ({
-        role: h.role,
-        parts: h.parts.map(p => {
-            if (p.inlineData) {
-                return { inline_data: { mime_type: p.inlineData.mimeType, data: p.inlineData.data } };
-            }
-            return { text: p.text };
-        })
-    }));
+    // FORZAR LOG EN CONSOLA PARA VER QUÉ LLAVE SE ENVÍA
+    console.log("🔥 USANDO API KEY:", apiKey.substring(0, 8) + "..." + apiKey.substring(apiKey.length - 4));
 
-    const newParts: any[] = [{ text: message }];
-    if (image) {
-        newParts.push({
-            inline_data: {
-                mime_type: image.mimeType,
-                data: image.data
+    // 1. Google Gemini FALLA (Error 400) si el historial no alterna estrictamente entre user y model, 
+    // o si empieza con model. Vamos a forzar un historial limpio.
+    const contents: any[] = [];
+    
+    // Solo incluimos el historial si es válido y alterna roles
+    if (history && history.length > 0) {
+        let lastRole = '';
+        history.forEach(h => {
+            const currentRole = h.role === 'model' ? 'model' : 'user';
+            // Solo añadir si el rol es diferente al anterior (alternancia)
+            if (currentRole !== lastRole && h.parts?.[0]?.text) {
+                contents.push({
+                    role: currentRole,
+                    parts: [{ text: h.parts[0].text }]
+                });
+                lastRole = currentRole;
             }
         });
     }
 
+    // Asegurarnos de que el ÚLTIMO mensaje antes del actual sea de 'model' 
+    // para que el actual sea de 'user'. Si no lo es, eliminamos el último del historial.
+    if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+        contents.pop();
+    }
+
+    // 2. Añadir el mensaje actual del usuario
     contents.push({
         role: 'user',
-        parts: newParts
+        parts: [{ text: message }]
     });
 
-    const body = {
+    // 3. Si hay imagen, añadirla al ÚLTIMO mensaje (que ahora sabemos que es 'user')
+    if (image && contents.length > 0) {
+        contents[contents.length - 1].parts.push({
+            inline_data: { mime_type: image.mimeType, data: image.data }
+        } as any);
+    }
+
+    // 4. Configuración mejorada
+    const baseInstruction = `Eres 'Nikon AI', el Asistente Experto oficial de Nikon Chile. 
+    REGLA DE ORO DE CONVERSACIÓN: NUNCA entregues toda la información junta en el primer mensaje. Tienes prohibido dar respuestas largas. Mantenlo conversacional.
+    
+    FLUJO ESTRICTO A SEGUIR (Espera respuesta del usuario entre cada paso):
+    1. INTRODUCCIÓN: Explica el concepto pedido en máximo 2 o 3 líneas. Nada más. Termina este mensaje ofreciendo las siguientes dos opciones textuales: "¿Te gustaría que te dé 3 consejos prácticos sobre este tema, o prefieres saber cómo aplicar estos conceptos directamente con tu cámara?". (Detente aquí y espera respuesta).
+    2. INTERACCIÓN 1 (Tras elegir consejos o cámara): Entrega lo que el usuario pidió de forma breve. Al terminar, cierra con: "¿Quieres seguir aprendiendo y que te recomiende equipos complementarios que pueden ayudar a mejorar tu kit fotográfico?". (Detente y espera respuesta).
+    3. INTERACCIÓN 2 (Equipos): Si dice que sí, recomiéndale equipos o accesorios relacionados al tema que estén en stock de forma natural y SUTILMENTE recomiéndale cómo una cámara de la nueva línea Mirrorless Nikon Z mejoraría aún más esta experiencia. (Espera).
+    4. INTERACCIÓN 3 (Compra): Si responde bien o muestra interés, entrégale un link ficticio pero realista de compra (ej. https://store.nikoncenter.cl/productos). Si no muestra interés, pregunta de qué otra forma puedes ayudar.`;
+    
+    // Anexar instrucciones extra basadas en la autenticación/equipo del usuario
+    const finalInstruction = systemInstructionExtra 
+        ? `${baseInstruction}\n\n${systemInstructionExtra}`
+        : baseInstruction;
+
+    const body: any = {
         contents: contents,
-        system_instruction: {
-            parts: [{ text: "Eres 'Nikon AI', el Asistente Experto y Asesor de Ventas oficial de Nikon Chile. Tu misión es proporcionar información precisa basada ÚNICAMENTE en el contexto proporcionado y en tu conocimiento experto de Nikon.\n\nREGLAS DE ORO DE CONTEXTO:\n1. Revisa siempre la sección 'Catálogo DISPONIBLE'. Si un producto no está ahí, DEBES decir que no hay stock actualmente pero es un modelo Nikon excelente y ofrecer aviso de disponibilidad.\n2. Revisa la sección 'Equipo que YA TIENE' del usuario. Úsala para dar consejos específicos de configuración (menús, botones) y para sugerir accesorios COMPATIBLES que tengamos en stock.\n3. Revisa 'PRÓXIMOS WORKSHOPS' para recomendar eventos presenciales específicos (ej: el de Pablo Valenzuela).\n\nPERSONALIDAD:\n- Profesional, apasionado por la fotografía, resolutivo.\n- Nunca recomiendes otras marcas.\n- Siempre menciona nikoncenter.cl para compras o soporte oficial.\n- Responde siempre en español." }]
+        systemInstruction: {
+            parts: [{ text: finalInstruction }]
         },
         generationConfig: {
-            temperature: modelType === 'think' ? 0.7 : 0.4,
-            maxOutputTokens: 1000,
+            temperature: 0.5,
+            maxOutputTokens: 2048,
         }
     };
 
     try {
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error("Gemini API Error:", errText);
-            // Try to parse error message
-            let detailedError = `Error ${response.status}: ${response.statusText}`;
-            try {
-                const errJson = JSON.parse(errText);
-                detailedError = errJson.error.message || detailedError;
-            } catch (e) { }
+        const data = await response.json();
 
-            return `Error del sistema: ${detailedError}. (Verifica tu API Key o el modelo)`;
+        // LOG DE DEPURACIÓN CRÍTICO PARA EL USUARIO
+        if (!response.ok) {
+            console.error("DEBUG - Gemini API Error Detail:", data);
+            
+            // Si el error es de expiración
+            const errMsg = data.error?.message || "";
+            if (errMsg.toLowerCase().includes("expired") || errMsg.toLowerCase().includes("api key not valid")) {
+                return "La API Key de Google ha expirado o no es válida. Por favor verifica que copiaste la llave correcta de Google AI Studio (aistudio.google.com) y reemplázala en el archivo .env";
+            }
+            
+            return `Error de Nikon AI (${response.status}): ${errMsg || 'Error desconocido'}`;
         }
 
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        return text || "No response generated.";
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+            return data.candidates[0].content.parts[0].text;
+        }
 
+        return "Recibí tu mensaje pero no pude generar una respuesta clara.";
     } catch (error) {
-        console.error("Network Error:", error);
-        return `Error de Conexión: ${(error as Error).message}`;
+        console.error("Fetch Error:", error);
+        return "Error de red al conectar con Nikon AI.";
     }
 };

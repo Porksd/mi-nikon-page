@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tutorial } from '../types';
 import { TUTORIALS_DATA } from '../utils/appData';
+import { trackPageView, trackTutorialView } from '../utils/analyticsService';
 
-const CATEGORIES = ['Todos', 'Ideas e Inspiración', 'Productos e Innovación', 'Tips y Técnicas'];
+const CATEGORIES = ['Todos', 'Ideas e Inspiración', 'Sugerencias y Técnicas', 'Productos e Innovación'];
 
 const Tutorials: React.FC = () => {
    const [activeTab, setActiveTab] = useState('Todos');
 
+   useEffect(() => {
+      // Track page view
+      trackPageView('/tutorials', 'Tutoriales');
+   }, []);
+
    const filteredTutorials = activeTab === 'Todos'
       ? TUTORIALS_DATA
       : TUTORIALS_DATA.filter(t => t.category === activeTab);
+   
+   const handleTutorialClick = (tutorial: Tutorial) => {
+      // Track tutorial view
+      trackTutorialView(tutorial.id, tutorial.title, 0);
+   };
 
    return (
       <div className="flex-1 w-full max-w-[1200px] mx-auto px-4 md:px-8 py-10">
@@ -52,6 +63,7 @@ const Tutorials: React.FC = () => {
                         href={tutorial.link}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={() => handleTutorialClick(tutorial)}
                         className="w-full py-3 border border-nikon-border rounded text-center text-sm font-bold text-white hover:bg-nikon-yellow hover:text-black hover:border-nikon-yellow transition-colors"
                      >
                         Ver Tutorial Completo

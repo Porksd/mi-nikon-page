@@ -1,53 +1,44 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
-import { Camera, TrendingUp, GraduationCap } from 'lucide-react';
+import { Camera, TrendingUp, GraduationCap, ShoppingCart, X } from 'lucide-react';
+import { getOrCreateActiveCart, formatPrice, getHoursSinceUpdate } from '../utils/cartService';
+import { ShoppingCart as Cart } from '../types';
+import { trackPageView } from '../utils/analyticsService';
+import { getRandomTip, PhotoTip } from '../utils/tipsService';
+
+interface Banner {
+  id: string;
+  title: string;
+  tagline: string;
+  link: string;
+  image_url: string;
+  button_text: string;
+  sort_order: number;
+  is_active: boolean;
+}
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  const products = [
-    {
-      name: "Nuevo Firmware 2.0",
-      tagline: "Rendimiento impresionante, Ahora mejorado.",
-      link: "https://downloadcenter.nikonimglib.com/es/download/fw/571.html",
-      image: "/images/shortcuts/shortcut_nuevo_firmware_2.jpg"
-    },
-    {
-      name: "NIKKOR DX 16-50mm f/2.8 VR",
-      tagline: "Rendimiento de zoom rápido y versátil.",
-      link: "https://www.nikoncenter.cl/lentes/mirrorless/nikkor-z-dx-16-50mm-f28-vr",
-      image: "/images/shortcuts/shortcut_dx_16_50.jpg"
-    },
-    {
-      name: "Z9: Nuevo Firmware 5.0",
-      tagline: "Nuevas y poderosas ventajas y mejoras",
-      link: "https://downloadcenter.nikonimglib.com/es/products/589/Z_9.html",
-      image: "/images/shortcuts/shortcut_nuevo_firmware_Z9.jpg"
-    },
-    {
-      name: "NIKKOR DX MC 35mm f/1.7",
-      tagline: "Ligero, brillante y hermoso.",
-      link: "https://www.nikoncenter.cl/lentes/mirrorless/nikkor-z-dx-mc-35mm-f-17",
-      image: "/images/shortcuts/shortcut_dx_mc_35.jpg"
-    }
-  ];
+  const [cart, setCart] = useState<Cart | null>(null);
+  const [cartBannerDismissed, setCartBannerDismissed] = useState(false);
+  const [dailyTip, setDailyTip] = useState<PhotoTip | null>(null);
+  const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % products.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+    // Track page view
+    trackPageView('/', 'Home');
+    
+    setDailyTip(getRandomTip());
+    fetchBanners();
 
-  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        loadUserCart(session.user.id, session.user.email || '');
       }
     });
 
@@ -55,13 +46,25 @@ const Home: React.FC = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        loadUserCart(session.user.id, session.user.email || '');
       } else {
         setProfile(null);
+        setCart(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchBanners = async () => {
+    const { data } = await supabase
+      .from('banners')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+    
+    if (data) setBanners(data);
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -69,13 +72,91 @@ const Home: React.FC = () => {
       .select('first_name')
       .eq('id', userId)
       .single();
-    if (data) setProfile(data);
+    setProfile(data);
+  };
+
+  const loadUserCart = async (userId: string, email: string) => {
+    const activeCart = await getOrCreateActiveCart(userId, email);
+    
+    // Only show banner if cart has items and was updated more than 1 hour ago
+    if (activeCart && activeCart.items_count > 0) {
+      const hoursAbandoned = getHoursSinceUpdate(activeCart.updated_at);
+      if (hoursAbandoned >= 1) {
+        setCart(activeCart);
+      }
+    }
+  };
+
+  const handleDismissBanner = () => {
+    setCartBannerDismissed(true);
+    // Store in localStorage to persist dismissal
+    if (cart) {
+      localStorage.setItem(`cart-banner-dismissed-${cart.id}`, 'true');
+    }
+  };
+
+  const shouldShowCartBanner = () => {
+    if (!cart || cartBannerDismissed || !cart.items_count) return false;
+    
+    // Check if already dismissed in this session
+    const isDismissed = localStorage.getItem(`cart-banner-dismissed-${cart.id}`);
+    if (isDismissed) return false;
+    
+    const hoursAbandoned = getHoursSinceUpdate(cart.updated_at);
+    return hoursAbandoned >= 1;
   };
 
   return (
     // Header and Footer are now handled by Layout in App.tsx
     <main className="flex-1 flex flex-col items-center py-10 px-4 md:px-10 lg:px-20 w-full font-sans">
       <div className="flex flex-col max-w-[1200px] w-full gap-16">
+        
+        {/* Abandoned Cart Banner - OCULTO PARA FASE 1.0 */}
+        {false && shouldShowCartBanner() && (
+          <div className="bg-gradient-to-r from-nikon-yellow/20 to-orange-500/20 border border-nikon-yellow/30 rounded-xl p-5 animate-fadeIn">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-nikon-yellow/20 rounded-full">
+                <ShoppingCart className="w-6 h-6 text-nikon-yellow" />
+              </div>
+              
+              <div className="flex-1">
+                <h3 className="font-bold text-white text-lg mb-1">
+                  🛒 ¡Tienes productos esperándote en tu carrito!
+                </h3>
+                <p className="text-gray-300 text-sm mb-3">
+                  {cart.items_count} producto{cart.items_count > 1 ? 's' : ''} por {formatPrice(cart.total_value)} · 
+                  Hace {Math.floor(getHoursSinceUpdate(cart.updated_at))} hora{Math.floor(getHoursSinceUpdate(cart.updated_at)) !== 1 ? 's' : ''}
+                  {getHoursSinceUpdate(cart.updated_at) > 72 && (
+                    <span className="ml-2 text-nikon-yellow font-medium">
+                      · ¡5% descuento si compras hoy! 🎁
+                    </span>
+                  )}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => navigate('/cart')}
+                    className="px-5 py-2 bg-nikon-yellow hover:bg-yellow-500 text-black font-bold rounded-lg transition-colors text-sm"
+                  >
+                    Ver mi carrito
+                  </button>
+                  <button
+                    onClick={handleDismissBanner}
+                    className="px-5 py-2 bg-nikon-surface border border-gray-700 hover:border-white text-white font-medium rounded-lg transition-colors text-sm"
+                  >
+                    Más tarde
+                  </button>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleDismissBanner}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Hero Section */}
         <section className="flex flex-col-reverse lg:flex-row gap-10 items-center">
@@ -157,59 +238,82 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Carousel */}
-          <div className="w-full lg:w-1/2 flex justify-center lg:justify-end relative">
-            <div className="relative w-full aspect-[4/3] max-w-[600px] overflow-hidden rounded-2xl border border-nikon-border group shadow-2xl shadow-nikon-yellow/5">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10 pointer-events-none"></div>
-              
-              {products.map((product, index) => (
-                <div 
-                  key={index}
-                  className={`absolute inset-0 transition-opacity duration-1000 ${
-                    index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                  }`}
-                >
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute bottom-6 left-6 right-6 z-30 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-                    <div className="bg-nikon-black/90 backdrop-blur-sm border border-nikon-border px-4 py-3 rounded-lg flex items-center gap-3 flex-1">
-                      <span className="material-symbols-outlined text-nikon-yellow">photo_camera</span>
-                      <div>
-                        <p className="text-white text-xs font-bold uppercase tracking-wider">{product.name}</p>
-                        <p className="text-nikon-text text-xs">{product.tagline}</p>
-                      </div>
-                    </div>
-                    <a 
-                      href={product.link}
-                      target="_blank"
-                      rel="noopener noreferrer" 
-                      className="bg-nikon-yellow text-black font-bold text-xs uppercase px-4 py-3 rounded-lg hover:brightness-110 transition-all flex items-center gap-1 shrink-0 shadow-lg"
-                    >
-                      Ver más
-                      <span className="material-symbols-outlined text-sm">arrow_outward</span>
-                    </a>
-                  </div>
+          {/* Right: Banners display from Admin */}
+          <div className="w-full lg:w-1/2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+             {banners.length === 0 && (
+                <div className="col-span-2 bg-nikon-surface border border-nikon-border rounded-xl p-8 text-center text-gray-400">
+                   Cargando novedades...
                 </div>
-              ))}
-              
-              {/* Carousel Indicators */}
-              <div className="absolute top-4 right-4 z-30 flex gap-2">
-                {products.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`h-1.5 rounded-full transition-all shadow-sm ${
-                      index === currentSlide ? 'bg-nikon-yellow w-6' : 'bg-white/30 hover:bg-white/80 w-3'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
+             )}
+             {banners.map((banner) => (
+               <div key={banner.id} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-nikon-border group">
+                   <img src={banner.image_url} alt={banner.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
+                   
+                   <div className="absolute bottom-0 left-0 right-0 p-4">
+                       <h3 className="text-white font-bold text-lg leading-tight mb-1">{banner.title}</h3>
+                       <p className="text-gray-300 text-xs mb-3 line-clamp-2">{banner.tagline}</p>
+                       <a href={banner.link} target="_blank" rel="noopener noreferrer" className="inline-block bg-nikon-yellow text-black text-xs font-bold px-3 py-2 rounded hover:brightness-110 transition-all">
+                           {banner.button_text}
+                       </a>
+                   </div>
+               </div>
+             ))}
           </div>
         </section>
+
+        {/* Daily Tip Section - From Nikon School PDF */}
+        {dailyTip && (
+          <section className="w-full">
+            <div className="bg-nikon-surface border border-nikon-border rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 relative overflow-hidden shadow-xl">
+              <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12">
+                <span className="material-symbols-outlined text-[120px] text-white">lightbulb</span>
+              </div>
+              
+              <div className="bg-nikon-yellow w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center shrink-0 shadow-lg border-4 border-nikon-yellow/20">
+                 <span className="material-symbols-outlined text-4xl md:text-5xl text-black">tips_and_updates</span>
+              </div>
+              
+              <div className="flex-1 text-center md:text-left z-10">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                  <div className="bg-nikon-yellow/10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-nikon-yellow">
+                     SABÍAS QUE: {dailyTip.category}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-lg md:text-xl font-black text-white font-display uppercase">{dailyTip.title}</h3>
+                  <button 
+                    onClick={() => setDailyTip(getRandomTip())}
+                    className="text-white/40 hover:text-nikon-yellow transition-colors flex items-center justify-center"
+                    title="Siguiente Tip"
+                  >
+                    <span className="material-symbols-outlined text-2xl">arrow_forward</span>
+                  </button>
+                </div>
+                <p className="text-gray-400 font-medium text-sm md:text-base leading-relaxed max-w-2xl">
+                  "{dailyTip.content}"
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 z-10">
+                <button 
+                  onClick={() => navigate('/benefits', { 
+                    state: { 
+                      autoStartTip: true, 
+                      tipMessage: `Hola, me gustaría profundizar más sobre este concepto de fotografía: ${dailyTip.title}. Explícame de qué trata de forma sencilla y dame 3 consejos prácticos.` 
+                    } 
+                  })}
+                  className="bg-nikon-yellow text-black font-black py-3 px-6 rounded-lg hover:brightness-110 transition-all flex items-center gap-2 text-xs uppercase tracking-tighter shrink-0"
+                >
+                  <GraduationCap size={16} />
+                  Aprender más
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ction>
 
         {/* Quick Access */}
         <section className="flex flex-col gap-8 py-6">

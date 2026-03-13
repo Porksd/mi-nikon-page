@@ -377,7 +377,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* User Menu (Desktop) */}
             <div className="hidden md:flex items-center space-x-4">
               {/* PWA Install Button (Desktop) */}
-              {(showInstallButton || isAppInstalled) && (
+              {showInstallButton && (
                  <div className="relative group">
                     {showInstallButton ? (
                       <>
@@ -542,7 +542,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Link to="/workshops" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Actividades</Link>
               
               {/* PWA Install Button (Mobile) */}
-              {(showInstallButton || isAppInstalled) && (
+              {showInstallButton && (
                 <button 
                   onClick={() => {
                     if (showInstallButton) {

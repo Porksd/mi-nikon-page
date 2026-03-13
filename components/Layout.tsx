@@ -9,7 +9,13 @@ import { TUTORIALS_DATA, SERVICES_DATA, NIKON_CONTACT } from '../utils/appData';
 import { getOrCreateActiveCart } from '../utils/cartService';
 
 // ⚠️ IMPORTANTE: Añade tu email aquí para ver el botón de Admin
-const ADMIN_EMAILS = ['apacheco@nikoncenter.cl', 'admin@nikon.cl'];
+const ADMIN_EMAILS = [
+  'apacheco@nikoncenter.cl', 
+  'admin@nikon.cl',
+  'efuentes@nikoncenter.cl',
+  'andres.comastri@udenio.com',
+  'gabriel.taito@udenio.com'
+];
 
 interface LayoutProps {
   children: React.ReactNode;

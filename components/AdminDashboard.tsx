@@ -50,7 +50,7 @@ interface Notification {
 }
 
 const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'activity' | 'workshops' | 'notifications' | 'carts' | 'banners'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'activity' | 'workshops' | 'notifications' | 'carts' | 'banners' | 'feedback'>('analytics');
   const [loading, setLoading] = useState(false);
   
   // Data States
@@ -58,6 +58,7 @@ const AdminDashboard: React.FC = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [recentRegistrations, setRecentRegistrations] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [productRegistrations, setProductRegistrations] = useState<any[]>([]);
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string | null>(null);
   const [isProcessingWaitlist, setIsProcessingWaitlist] = useState(false);
@@ -170,6 +171,12 @@ const AdminDashboard: React.FC = () => {
             
             const carts = await getAbandonedCartsSummary();
             setAbandonedCarts(carts);
+        } else if (activeTab === 'feedback') {
+            const { data } = await supabase
+                .from('user_feedback')
+                .select('*, profile:profiles(first_name, last_name, email)')
+                .order('created_at', { ascending: false });
+            if (data) setFeedbacks(data);
         }
     } catch (error) {
         console.error("Error fetching data", error);
@@ -411,7 +418,7 @@ const AdminDashboard: React.FC = () => {
         <h1 className="text-3xl font-black font-display">Panel de Administración</h1>
         <div className="flex gap-2 flex-wrap">
             {/* Carts tab OCULTO PARA FASE 1.0 */}
-            {['analytics', 'activity', 'workshops', 'banners', 'notifications'].map((tab) => (
+            {['analytics', 'activity', 'workshops', 'banners', 'notifications', 'feedback'].map((tab) => (
                 <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
@@ -422,7 +429,8 @@ const AdminDashboard: React.FC = () => {
                     {tab === 'analytics' ? '📊 Analytics' :
                      tab === 'activity' ? 'Actividad' : 
                      tab === 'workshops' ? 'Workshops' :
-                     tab === 'banners' ? 'Banners' : 'Notificaciones'}
+                     tab === 'banners' ? 'Banners' :
+                     tab === 'feedback' ? 'Feedbacks' : 'Notificaciones'}
                 </button>
             ))}
         </div>
@@ -1041,6 +1049,41 @@ const AdminDashboard: React.FC = () => {
                           </div>
                       )}
                   </div>
+              </div>
+          </div>
+      )}
+
+      {/* FEEDBACK TAB */}
+      {!loading && activeTab === 'feedback' && (
+          <div className="bg-nikon-surface p-6 rounded-xl border border-nikon-border">
+              <h2 className="text-xl font-bold mb-4">Comentarios de Clientes (Feedback)</h2>
+              <div className="space-y-4">
+                  {feedbacks.length > 0 ? feedbacks.map((fb, i) => (
+                      <div key={i} className="p-4 border border-white/10 rounded bg-black/20 flex flex-col gap-2">
+                          <div className="flex justify-between items-start">
+                              <div>
+                                  <span className="font-bold text-lg text-nikon-yellow">
+                                      {fb.profile ? `${fb.profile.first_name} ${fb.profile.last_name || ''}`.trim() : 'Usuario Anónimo'}
+                                  </span>
+                                  <span className="text-xs text-gray-500 ml-2">{fb.profile?.email || ''}</span>
+                              </div>
+                              <span className="text-xs text-white bg-white/10 px-2 py-1 rounded capitalize">{fb.category || 'General'}</span>
+                          </div>
+                          
+                          {fb.rating && (
+                              <div className="flex text-nikon-yellow text-sm">
+                                  {"★".repeat(fb.rating)}{"☆".repeat(5 - fb.rating)}
+                              </div>
+                          )}
+
+                          <p className="text-gray-300 text-sm mt-1 bg-black/40 p-3 rounded">{fb.message}</p>
+                          <p className="text-xs text-gray-500 text-right">{new Date(fb.created_at).toLocaleString()}</p>
+                      </div>
+                  )) : (
+                      <div className="text-center py-10 text-gray-500 italic">
+                          No hay feedbacks registrados aún.
+                      </div>
+                  )}
               </div>
           </div>
       )}

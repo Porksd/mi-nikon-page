@@ -1,0 +1,603 @@
+{
+  "assistantConfig": {
+    "name": "Nikon AI",
+    "version": "1.0",
+    "lastUpdated": "2026-03-17",
+    "region": "Chile",
+    "supportedLanguages": [
+      "es-CL"
+    ],
+    "contactInfo": {
+      "physicalLocation": {
+        "name": "Nikon Center Callao",
+        "address": "Callao 3069 A, Las Condes, Santiago",
+        "hours": "Lunes a Viernes: 09:00-14:00 y 15:00-18:00"
+      },
+      "sales": {
+        "phone": "+56 2 22340210",
+        "extension": 101,
+        "email": "ventas@nikoncenter.cl",
+        "website": "www.nikoncenter.cl",
+        "hours": "Lun-Vie 09:00-18:00"
+      },
+      "onlineSales": {
+        "phone": "+56 (9) 3391 7713",
+        "email": "internet@nikoncenter.cl",
+        "website": "www.nikoncenter.cl",
+        "hours": "Lun-Vie 09:00-22:00 | Sábado 10:00-18:00"
+      },
+      "technicalSupport": {
+        "email": "stecnico@nikoncenter.cl",
+        "phone": "+56 2 22340210",
+        "extension": 100,
+        "hours": "Lun-Vie 09:00-14:00 y 15:00-19:00"
+      },
+      "school": {
+        "email": "cursos@nikoncenter.cl",
+        "hours": "Lun-Vie 09:30-18:30"
+      },
+      "whatsapp": {
+        "number": "+56 9 3391 7713",
+        "url": "https://api.whatsapp.com/send?l=es&text=Hola!%20Quiero%20realizarles%20una%20consulta&phone=56933917713",
+        "availability": "24/7"
+      }
+    },
+    "availableProducts": {
+      "cameras": {
+        "fullFrame": [
+          {
+            "model": "Nikon Z5II",
+            "status": "available",
+            "isNew": true,
+            "category": "Entrada Full Frame",
+            "specs": "24.5 MP, 100-64,000 ISO, 4K UHD, 3.2\" pantalla"
+          },
+          {
+            "model": "Nikon Zf",
+            "status": "available",
+            "category": "Retro/Híbrida",
+            "specs": "24.5 MP, 100-64,000 ISO, 4K UHD, EXPEED 7"
+          },
+          {
+            "model": "Nikon Z6III",
+            "status": "available",
+            "category": "Profesional Híbrida",
+            "specs": "24.5 MP, 60 CPS JPEG/20 CPS RAW, 6K N-RAW"
+          },
+          {
+            "model": "Nikon ZR",
+            "status": "available",
+            "isNew": true,
+            "category": "Cine/Full Frame",
+            "specs": "24.5 MP, 120 min grabación, Audio 32-bit, 6K RED RAW"
+          },
+          {
+            "model": "Nikon Z7II",
+            "status": "available",
+            "category": "Profesional Fotográfico",
+            "specs": "45.7 MP, 10 CPS, 64-25,600 ISO, 4K UHD"
+          },
+          {
+            "model": "Nikon Z8",
+            "status": "available",
+            "category": "Cine/Profesional Híbrida",
+            "specs": "45.7 MP, 20 CPS, ProRes 422 HQ, 8K N-RAW"
+          },
+          {
+            "model": "Nikon Z9",
+            "status": "available",
+            "category": "Profesional Total",
+            "specs": "45.7 MP, ISO 64-25,600, 8K UHD, 3.2\" pantalla"
+          }
+        ],
+        "apsc": [
+          {
+            "model": "Nikon Z30",
+            "status": "available",
+            "category": "Consumer/Creadores",
+            "specs": "20.9 MP, 100-51,200 ISO, 4K UHD, 3.0\" pantalla"
+          },
+          {
+            "model": "Nikon Z50II",
+            "status": "available",
+            "category": "Consumer/Creadores",
+            "specs": "20.9 MP, 100-51,200 ISO, 4K UHD, 3.2\" pantalla"
+          },
+          {
+            "model": "Nikon Zfc",
+            "status": "available",
+            "category": "Vlogging/Creadores",
+            "specs": "20.9 MP, 11 CPS, 100-51,200 ISO, 4K UHD, Diseño FM2"
+          }
+        ]
+      },
+      "lenses": {
+        "total_count": 50,
+        "entry_level": [
+          {
+            "model": "NIKKOR Z 28mm F 2.8",
+            "specs": "Fijo compacto, apertura f/2.8"
+          },
+          {
+            "model": "NIKKOR Z 24-50mm F 4-6.3",
+            "specs": "Zoom kit compacto versatilidad diaria"
+          },
+          {
+            "model": "NIKKOR Z 28mm F 2.8 (SE)",
+            "specs": "Versión Special Edition"
+          }
+        ],
+        "compact_prime": [
+          {
+            "model": "NIKKOR Z 40mm F 2.0",
+            "specs": "Fijo standard compacto, f/2.0"
+          },
+          {
+            "model": "NIKKOR Z 40mm F 2.0 (SE)",
+            "specs": "Special Edition versátil"
+          }
+        ],
+        "standard_zoom": [
+          {
+            "model": "NIKKOR Z 24-105mm f/4-7.1",
+            "specs": "Zoom todo-en-uno compacto, f/4-7.1"
+          },
+          {
+            "model": "NIKKOR Z 24-120mm F 4.0 S",
+            "specs": "Premium estándar f/4.0 constante, VR"
+          },
+          {
+            "model": "NIKKOR Z 24-200mm F 4-6.3 VR",
+            "specs": "Zoom versátil 8.3x, VR integrada"
+          },
+          {
+            "model": "NIKKOR Z 28-75mm F 2.8",
+            "specs": "Zoom rápido f/2.8 profesional"
+          },
+          {
+            "model": "NIKKOR Z 28-135mm f/4 PZ",
+            "specs": "Power Zoom para cinematografía"
+          },
+          {
+            "model": "NIKKOR Z 28-400mm F 4-8 VR",
+            "specs": "Megazooom viaje todo-en-uno 14.3x"
+          }
+        ],
+        "cinema_zoom": [
+          {
+            "model": "NIKKOR Z 24-70mm F 4.0 S",
+            "specs": "Zoom cine estándar f/4.0"
+          },
+          {
+            "model": "NIKKOR Z 24-70mm f/2.8 S II",
+            "specs": "Premium cine f/2.8 II mejorada"
+          }
+        ],
+        "wide_ultra_wide": [
+          {
+            "model": "NIKKOR Z 14-30mm F 4.0 S",
+            "specs": "Ultra-wide zoom f/4.0, paisaje/arquitectura"
+          },
+          {
+            "model": "NIKKOR Z 14-24mm F 2.8 S",
+            "specs": "Ultra-wide premium f/2.8, profesional"
+          },
+          {
+            "model": "NIKKOR Z 17-28mm F 2.8",
+            "specs": "Zoom angular compacto f/2.8"
+          },
+          {
+            "model": "NIKKOR Z 20mm F 1.8 S",
+            "specs": "Fijo angular luminoso f/1.8"
+          }
+        ],
+        "standard_prime": [
+          {
+            "model": "NIKKOR Z 26mm F 2.8",
+            "specs": "Equivalente 35mm focal, compacto"
+          },
+          {
+            "model": "NIKKOR Z 35mm F 1.4",
+            "specs": "Fijo versátil f/1.4, apertura rápida"
+          },
+          {
+            "model": "NIKKOR Z 35mm F 1.8 S",
+            "specs": "Premium profesional f/1.8"
+          },
+          {
+            "model": "NIKKOR Z 35mm f/1.2 S",
+            "specs": "Ultra-luminoso f/1.2, bokeh excepcional"
+          }
+        ],
+        "standard_50mm": [
+          {
+            "model": "NIKKOR Z 50mm F 1.4",
+            "specs": "Accesible clásico 50mm f/1.4"
+          },
+          {
+            "model": "NIKKOR Z 50mm F 1.8 S",
+            "specs": "Profesional compacto f/1.8"
+          },
+          {
+            "model": "NIKKOR Z 50mm F 1.2 S",
+            "specs": "Ultra-premium f/1.2, bokeh legendario"
+          },
+          {
+            "model": "NIKKOR Z MC 50mm F 2.8 MACRO",
+            "specs": "Macro 1:1, f/2.8, reproducción exacta"
+          }
+        ],
+        "telephoto_medium": [
+          {
+            "model": "NIKKOR Z 85mm F 1.8 S",
+            "specs": "Retrato profesional f/1.8"
+          },
+          {
+            "model": "NIKKOR Z 85mm F 1.2 S",
+            "specs": "Retrato ultra-premium f/1.2"
+          },
+          {
+            "model": "NIKKOR Z 135mm F 1.8 S Plena",
+            "specs": "Ultra-teleobjetivo compacto f/1.8"
+          }
+        ],
+        "telephoto_zoom": [
+          {
+            "model": "NIKKOR Z 70-180mm F 2.8",
+            "specs": "Zoom teleobjetivo f/2.8 compacto"
+          },
+          {
+            "model": "NIKKOR Z 70-200mm F 2.8 S VR",
+            "specs": "Teleobjetivo profesional estándar"
+          },
+          {
+            "model": "NIKKOR Z 70-200mm f/2.8 VR S II",
+            "specs": "Versión II mejorada, óptica actualizada"
+          }
+        ],
+        "super_telephoto": [
+          {
+            "model": "NIKKOR Z MC 105mm F 2.8 VR S MACRO",
+            "specs": "Macro 1:1 con VR, insectos/naturaleza"
+          },
+          {
+            "model": "NIKKOR Z 100-400mm f/4.5-5.6 VR S",
+            "specs": "Zoom largo deportivo/fauna silvestre"
+          },
+          {
+            "model": "NIKKOR Z 180-600mm F 5.6-6.3 VR",
+            "specs": "Alcance supremo ultra-comprimido"
+          },
+          {
+            "model": "NIKKOR Z 400mm F 4.5 VR S",
+            "specs": "Teleobjetivo profesional f/4.5"
+          },
+          {
+            "model": "NIKKOR Z 600mm F 6.3 VR S",
+            "specs": "Ornitología y fauna silvestre f/6.3"
+          },
+          {
+            "model": "NIKKOR Z 800mm F 6.3 VR S",
+            "specs": "Alcance máximo de Nikon f/6.3"
+          }
+        ],
+        "ultra_premium": [
+          {
+            "model": "NIKKOR Z 58mm F 0.95 S Noct.",
+            "specs": "Nocturna legendaria, máxima apertura f/0.95"
+          },
+          {
+            "model": "NIKKOR Z 400mm F 2.8 TC VR S",
+            "specs": "Teleconvertidor integrado, cine profesional"
+          },
+          {
+            "model": "NIKKOR Z 600mm F 4.0 TC VR S",
+            "specs": "Supertelefoto referencia mundial f/4.0"
+          }
+        ],
+        "teleconverters": [
+          {
+            "model": "Z TELECONVERTER TC-1.4x",
+            "specs": "Multiplicador focal x1.4, pierde 1 apertura"
+          },
+          {
+            "model": "Z TELECONVERTER TC-2.0x",
+            "specs": "Multiplicador focal x2.0, pierde 2 aperturas"
+          }
+        ],
+        "dx_apsc": [
+          {
+            "model": "NIKKOR Z DX 24mm F 1.7",
+            "specs": "Fijo luminoso DX, vlogging f/1.7"
+          },
+          {
+            "model": "NIKKOR Z DX 16-50mm F 3.5-6.3 VR",
+            "specs": "Kit DX estándar con VR"
+          },
+          {
+            "model": "NIKKOR Z DX 12-28mm F 3.5-5.6 PZ VR",
+            "specs": "Zoom angular DX con Power Zoom"
+          },
+          {
+            "model": "NIKKOR Z DX 50-250mm F 4.5-6.3 VR",
+            "specs": "Teleobjetivo comprimido DX"
+          },
+          {
+            "model": "NIKKOR Z DX MC 35mm F 1.7",
+            "specs": "Macro compacto DX f/1.7"
+          },
+          {
+            "model": "NIKKOR Z 16-50mm F 2.8 DX VR",
+            "specs": "Zoom rápido f/2.8 profesional DX"
+          },
+          {
+            "model": "NIKKOR Z DX 18-140mm F 3.5-6.3 VR DX",
+            "specs": "TODO-TERRENO ultra-versátil DX"
+          }
+        ],
+        "f_mount_legacy": [
+          {
+            "model": "AF-S DX NIKKOR 18-300mm F 3.5-6.3G ED VR",
+            "specs": "Reflex antiguo (usar con adaptador FTZ II)",
+            "note": "Montaje F antiguo, requiere adaptador para cámaras Z"
+          }
+        ]
+      },
+      "accessories": {
+        "batteries": [
+          {
+            "name": "Batería EN-EL15 C"
+          },
+          {
+            "name": "Batería recargable de ion de litio EN-EL25a"
+          },
+          {
+            "name": "Batería recargable EN-EL 20A"
+          }
+        ],
+        "chargers": [
+          {
+            "name": "Cargador de batería MH-32"
+          },
+          {
+            "name": "Cargador Rápido MH-25a"
+          }
+        ],
+        "memoryCards": [
+          {
+            "name": "Tarjeta Memoria Lexar SD 64GB"
+          },
+          {
+            "name": "Tarjeta Memoria Lexar SD 128 GB"
+          },
+          {
+            "name": "Tarjeta Memoria Lexar SD 256GB"
+          },
+          {
+            "name": "Tarjeta Lexar CF Express 128GB"
+          }
+        ],
+        "tripods": [
+          {
+            "name": "Trípode Ulanzi Ombra MT-55"
+          }
+        ],
+        "bagsAndBackpacks": [
+          {
+            "name": "BOLSO NIKON CARION"
+          },
+          {
+            "name": "Bolso Rectangular Nikon 1802A"
+          },
+          {
+            "name": "MOCHILA NIKON CARION"
+          },
+          {
+            "name": "Mochila Nikon Note 1802B"
+          },
+          {
+            "name": "MOCHILA PIONEER 1000 RT"
+          },
+          {
+            "name": "MOCHILA PIONEER 975 RT"
+          },
+          {
+            "name": "BOLSO VEO TRAVEL 41 (Sin Devoluciones)"
+          },
+          {
+            "name": "MOCHILA PIONEER 1600 RT"
+          },
+          {
+            "name": "MOCHILA PIONEER 1600"
+          },
+          {
+            "name": "MOCHILA PIONEER 2100 RT"
+          },
+          {
+            "name": "MALETA ALTA FLY 48 T"
+          },
+          {
+            "name": "MOCHILA ALTA SKY 53"
+          },
+          {
+            "name": "MOCHILA ALTA SKY 66"
+          }
+        ],
+        "microphones": [
+          {
+            "name": "Micrófono de cañón ME-D10"
+          }
+        ],
+        "remoteControls": [
+          {
+            "name": "Control Remoto Bluetooth ML-L7"
+          }
+        ],
+        "adapters": [
+          {
+            "name": "Adaptador FTZ II"
+          }
+        ],
+        "batteryGrips": [
+          {
+            "name": "MB-N10 P/ Z-7II, Z-6II, Z-5"
+          },
+          {
+            "name": "MB-N11 P/Z-6 II y Z-7 II"
+          },
+          {
+            "name": "MB-N14 P/Z-7 II - Z-6 III - Z-5 II"
+          }
+        ],
+        "binoculars": [
+          {
+            "name": "MONARCH HG 8x30"
+          },
+          {
+            "name": "MONARCH HG 10x30"
+          },
+          {
+            "name": "MONARCH HG 8x42"
+          },
+          {
+            "name": "MONARCH HG 10x42"
+          },
+          {
+            "name": "MONARCH HG 8x56"
+          },
+          {
+            "name": "MONARCH HG 10x56"
+          },
+          {
+            "name": "MONARCH HG 12x42"
+          },
+          {
+            "name": "MONARCH HG 16x56"
+          },
+          {
+            "name": "MONARCH HG 20x56"
+          },
+          {
+            "name": "MONARCH HG 30x56"
+          }
+        ],
+        "filters": [
+          {
+            "name": "Filtro de enfoque suave de 77 mm"
+          }
+        ],
+        "lenses": [
+          {
+            "name": "Tapa de Objetivo LC-CP23"
+          },
+          {
+            "name": "Tapa de Objetivo LC-CP22"
+          },
+          {
+            "name": "Tapa del objetivo LC-CP24"
+          },
+          {
+            "name": "Tapa del objetivo LC-CP25"
+          }
+        ]
+      },
+      "otherProducts": {
+        "dslr": [
+          {
+            "model": "Nikon D-7500",
+            "type": "Réflex DSLR DX",
+            "specs": "20.9 MP, ISO 100-51,200, 4K UHD, 8 CPS, SnapBridge, Bluetooth",
+            "note": "Tecnología anterior DSLR - Recomendar Sistema Z (Z50II o Z30) para modernidad"
+          }
+        ],
+        "compacts": [
+          {
+            "model": "Nikon COOLPIX P-1100",
+            "type": "Cámara Compacta",
+            "specs": "Cámara compacta de viaje con zoom óptico versátil",
+            "note": "Para creadores móviles, considerar Nikon Zfc (Mirrorless con intercambio de lentes)"
+          }
+        ]
+      }
+    },
+    "discontinuedProducts": {
+      "cameras": [
+        {
+          "model": "Nikon Z5",
+          "reason": "Versión obsoleta",
+          "alternative": "Nikon Z5II"
+        },
+        {
+          "model": "Nikon D850",
+          "reason": "Línea DSLR descontinuada",
+          "alternative": "Nikon Z5II o Z9"
+        },
+        {
+          "model": "Nikon D6",
+          "reason": "Línea DSLR descontinuada",
+          "alternative": "Nikon Z9"
+        },
+        {
+          "model": "Nikon D780",
+          "reason": "Línea DSLR descontinuada",
+          "alternative": "Nikon Zf o Z5II"
+        },
+        {
+          "model": "Nikon D3500",
+          "reason": "Línea DSLR descontinuada",
+          "alternative": "Nikon Z50II o Z30"
+        }
+      ]
+    },
+    "allowedLinks": {
+      "store": "www.nikoncenter.cl",
+      "whatsapp": "https://api.whatsapp.com/send?l=es&text=Hola!%20Quiero%20realizarles%20una%20consulta&phone=56933917713",
+      "manuals": [
+        "https://onlinemanual.nikonimglib.com/zr/es/",
+        "https://onlinemanual.nikonimglib.com/z9/es/",
+        "https://onlinemanual.nikonimglib.com/z6iii/es/",
+        "https://downloadcenter.nikonimglib.com/es/index.html"
+      ],
+      "reference": {
+        "agps": "http://nikonimglib.com/agps/index.html"
+      }
+    },
+    "prohibitedPatterns": [
+      "*.educate*",
+      "learn-and-explore",
+      "competitor-sites",
+      "invalid-links"
+    ],
+    "mandatoryRules": {
+      "commercialResponses": [
+        "Include at least ONE contact method (phone/email/whatsapp)",
+        "Include business hours if providing contact",
+        "Only recommend available products",
+        "Validate all links before sending"
+      ],
+      "discontinuedProducts": [
+        "Explicitly state: 'No está disponible en Nikon Center Chile'",
+        "Offer available alternative with similar function",
+        "If no alternative: offer specialist consultation",
+        "Provide WhatsApp link for specialist contact"
+      ],
+      "links": [
+        "Only nikoncenter.cl, manuals, or firmware links",
+        "Must be fully functional (https://...)",
+        "Never send broken or unvalidated links"
+      ],
+      "tone": [
+        "Consultative, not transactional",
+        "Professional expert tone",
+        "Conversational (not long blocks)",
+        "Wait for user response between steps"
+      ]
+    },
+    "templates": {
+      "availableProduct": "¡Excelente elección! La [PRODUCT] está disponible en Nikon Center Chile.\n\n[FEATURES]\n\n¿Quieres conocer más detalles o prefieres contactar con ventas?\n\n[CONTACT_INFO]",
+      "unavailableProduct": "La [PRODUCT] lamentablemente ya no está disponible en Nikon Center Chile.\n\nTe recomendamos la [ALTERNATIVE] que la supera en:\n[ADVANTAGES]\n\n¿Quieres saber más o prefieres asesoría especializada?\n\n[CONTACT_INFO]",
+      "technicalSupport": "Para servicio técnico, contacta directamente:\n\n📧 Email: stecnico@nikoncenter.cl\n📞 Teléfono: +56 2 22340210 Anexo 100\n🕐 Horario: Lun-Vie 09:00-14:00 y 15:00-19:00\n\nO vía WhatsApp para consulta rápida: +56 9 3391 7713",
+      "purchase": "Compra disponible en:\n\n🌐 www.nikoncenter.cl (24/7)\n📱 WhatsApp: +56 9 3391 7713\n📞 Teléfono: +56 (9) 3391 7713\n⏰ Horario: Lun-Vie 09:00-22:00 | Sábado 10:00-18:00"
+    }
+  }
+}

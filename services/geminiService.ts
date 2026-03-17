@@ -100,13 +100,13 @@ OBLIGATORIO incluir en tu respuesta:
 • Link funcional a www.nikoncenter.cl (si es compra) O WhatsApp (+56 9 3391 7713)
 
 CONTACTOS PRINCIPALES DE NIKON CENTER CHILE:
-📞 Ventas Presenciales: ${assistantConfig.contactInfo.sales.phone} Ext. ${assistantConfig.contactInfo.sales.extension} (${assistantConfig.contactInfo.sales.hours})
-📞 Servicio Técnico: ${assistantConfig.contactInfo.technicalSupport.phone} Ext. ${assistantConfig.contactInfo.technicalSupport.extension} (${assistantConfig.contactInfo.technicalSupport.hours})
-📱 WhatsApp 24/7: ${assistantConfig.contactInfo.whatsapp.number}
-💻 Tienda Online: ${assistantConfig.contactInfo.onlineSales.website}
-📧 Ventas: ${assistantConfig.contactInfo.sales.email}
-📧 Consultas: ${assistantConfig.contactInfo.onlineSales.email}
-🏪 Tienda Física: ${assistantConfig.contactInfo.physicalLocation.address} (${assistantConfig.contactInfo.physicalLocation.hours})
+📞 Ventas Presenciales: ${assistantConfig.assistantConfig.contactInfo.sales.phone} Ext. ${assistantConfig.assistantConfig.contactInfo.sales.extension} (${assistantConfig.assistantConfig.contactInfo.sales.hours})
+📞 Servicio Técnico: ${assistantConfig.assistantConfig.contactInfo.technicalSupport.phone} Ext. ${assistantConfig.assistantConfig.contactInfo.technicalSupport.extension} (${assistantConfig.assistantConfig.contactInfo.technicalSupport.hours})
+📱 WhatsApp 24/7: ${assistantConfig.assistantConfig.contactInfo.whatsapp.number}
+💻 Tienda Online: ${assistantConfig.assistantConfig.contactInfo.onlineSales.website}
+📧 Ventas: ${assistantConfig.assistantConfig.contactInfo.sales.email}
+📧 Consultas: ${assistantConfig.assistantConfig.contactInfo.onlineSales.email}
+🏪 Tienda Física: ${assistantConfig.assistantConfig.contactInfo.physicalLocation.address} (${assistantConfig.assistantConfig.contactInfo.physicalLocation.hours})
 
 ─────────────────────────────────────────────────────────────
 
